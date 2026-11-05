@@ -1,0 +1,300 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动浏览 - 智能文娱票务系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: 'Microsoft YaHei', sans-serif; background: #f5f7fa; }
+        #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* 顶部导航栏 */
+        .top-nav {
+            background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky; top: 0; z-index: 100; height: 64px;
+            display: flex; align-items: center; padding: 0 32px;
+        }
+        .nav-logo { font-size: 20px; font-weight: bold; color: #409eff; margin-right: 48px; white-space: nowrap; }
+        .nav-menu { display: flex; gap: 32px; flex: 1; }
+        .nav-menu a {
+            font-size: 15px; color: #606266; text-decoration: none; padding: 4px 0;
+            border-bottom: 2px solid transparent; transition: all .3s;
+        }
+        .nav-menu a:hover, .nav-menu a.active { color: #409eff; border-bottom-color: #409eff; }
+        .nav-right { display: flex; align-items: center; gap: 16px; }
+        .nav-right a { font-size: 14px; color: #606266; text-decoration: none; }
+        .nav-right a:hover { color: #409eff; }
+
+        /* 主内容区 */
+        .main-wrap { flex: 1; padding: 24px 32px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+        /* 分类Tab */
+        .category-tabs { margin-bottom: 20px; }
+
+        /* 筛选栏 */
+        .filter-bar {
+            background: #fff; border-radius: 10px; padding: 20px 24px;
+            margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+        }
+        .filter-bar .filter-item { display: flex; flex-direction: column; gap: 4px; }
+        .filter-bar .filter-label { font-size: 12px; color: #909399; }
+        .filter-bar .el-input, .filter-bar .el-select { width: 180px; }
+
+        /* 活动网格 */
+        .activity-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .activity-card {
+            background: #fff; border-radius: 10px; overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); cursor: pointer;
+            transition: transform .3s, box-shadow .3s;
+        }
+        .activity-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        .activity-card .card-img {
+            width: 100%; height: 180px; object-fit: cover; background: #e9ecef;
+            display: flex; align-items: center; justify-content: center; color: #c0c4cc; font-size: 40px;
+        }
+        .activity-card .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .activity-card .card-body { padding: 14px 16px; }
+        .activity-card .card-title {
+            font-size: 15px; font-weight: 600; color: #303133;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 8px;
+        }
+        .activity-card .card-info {
+            font-size: 13px; color: #909399; display: flex; align-items: center; gap: 4px;
+            margin-bottom: 4px;
+        }
+        .activity-card .card-bottom {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;
+        }
+        .card-price { font-size: 18px; font-weight: bold; color: #f56c6c; }
+        .card-price small { font-size: 12px; font-weight: normal; }
+        .card-remain { font-size: 12px; color: #909399; }
+
+        /* 分页 */
+        .pagination-wrap { 
+            display: flex; justify-content: center; margin-top: 40px; 
+            padding-bottom: 40px; clear: both;
+        }
+
+        /* 底部 */
+        .site-footer {
+            background: #2c3e50; color: rgba(255,255,255,0.6); text-align: center;
+            padding: 24px 0; margin-top: auto; font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<div id="app" th:inline="none">
+    <!-- 顶部导航栏 -->
+    <div class="top-nav">
+        <div class="nav-logo">🎫 智能文娱票务系统</div>
+        <div class="nav-menu">
+            <a href="/page/">首页</a>
+            <a href="/page/activity/list" :class="{ active: true }">活动浏览</a>
+        </div>
+        <div class="nav-right">
+            <template v-if="loggedIn">
+                <a href="/page/order/list">我的订单</a>
+                <a href="/page/user/center">个人中心</a>
+                <a v-if="user.role === 1" href="/page/operator/dashboard" style="color:#e6a23c;">运营后台</a>
+                <a v-if="user.role === 2" href="/page/admin/dashboard" style="color:#e6a23c;">管理后台</a>
+                <el-button type="danger" text @click="handleLogout">退出</el-button>
+            </template>
+            <template v-else>
+                <a href="/page/login">登录</a>
+                <a href="/page/register">注册</a>
+            </template>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-wrap">
+        <!-- 分类Tab -->
+        <div class="category-tabs">
+            <el-radio-group v-model="filters.categoryId" @change="handleSearch">
+                <el-radio-button :value="0">全部</el-radio-button>
+                <el-radio-button v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</el-radio-button>
+            </el-radio-group>
+        </div>
+
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+            <div class="filter-item">
+                <span class="filter-label">关键词</span>
+                <el-input v-model="filters.keyword" placeholder="搜索活动" clearable @keyup.enter="handleSearch" />
+            </div>
+            <div class="filter-item">
+                <span class="filter-label">活动时间</span>
+                <el-date-picker v-model="filters.dateRange" type="daterange" range-separator="至"
+                                start-placeholder="开始日期" end-placeholder="结束日期"
+                                value-format="YYYY-MM-DD" style="width:280px;" />
+            </div>
+            <div class="filter-item">
+                <span class="filter-label">价格区间</span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <el-input v-model="filters.minPrice" placeholder="最低价" style="width:90px;" />
+                    <span style="color:#c0c4cc;">-</span>
+                    <el-input v-model="filters.maxPrice" placeholder="最高价" style="width:90px;" />
+                </div>
+            </div>
+            <div class="filter-item">
+                <span class="filter-label">排序</span>
+                <el-select v-model="filters.sortField" placeholder="排序方式" clearable style="width:140px;">
+                    <el-option label="最新发布" value="create_time" />
+                    <el-option label="价格最低" value="price" />
+                    <el-option label="价格最高" value="price_desc" />
+                    <el-option label="热度排序" value="view_count" />
+                </el-select>
+            </div>
+            <div class="filter-item" style="justify-content:flex-end;">
+                <el-button type="primary" @click="handleSearch">筛选</el-button>
+                <el-button @click="resetFilters">重置</el-button>
+            </div>
+        </div>
+
+        <!-- 活动卡片网格 -->
+        <div class="activity-grid">
+            <div class="activity-card" v-for="item in activityList" :key="item.id" @click="goDetail(item.id)">
+                <div class="card-img">
+                    <img v-if="item.coverImage" :src="normalizeImageUrl(item.coverImage)" :alt="item.title" />
+                    <el-icon v-else><Picture /></el-icon>
+                </div>
+                <div class="card-body">
+                    <div class="card-title">{{ item.title }}</div>
+                    <div class="card-info"><el-icon><Location /></el-icon> {{ item.venue }}</div>
+                    <div class="card-info"><el-icon><Clock /></el-icon> {{ formatTime(item.startTime) }}</div>
+                    <div class="card-bottom">
+                        <span class="card-price"><small>¥</small>{{ item.price }}</span>
+                        <span class="card-remain">剩余 {{ item.remainTickets ?? (item.totalTickets - item.soldTickets) ?? 0 }} 张</span>
+                    </div>
+                    <div style="margin-top:6px;">
+                        <el-tag size="small" :type="grabTagType(item.grabStatus)">{{ grabTagText(item) }}</el-tag>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <el-empty v-if="!activityList.length && !loading" description="暂无活动" style="padding:60px 0;" />
+
+        <!-- 分页 -->
+        <div class="pagination-wrap">
+            <el-pagination v-model:current-page="page" v-model:page-size="size"
+                           :page-sizes="[8, 12, 16, 24]" :total="total"
+                           layout="total, sizes, prev, pager, next, jumper"
+                           @size-change="handleSearch" @current-change="handleSearch" />
+        </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="site-footer">© 2024 智能文娱票务系统 — 毕业设计项目</div>
+</div>
+<script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.2.36/dist/index.full.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+const app = createApp({
+    setup() {
+        const loading = ref(false);
+        const page = ref(1);
+        const size = ref(8);
+        const total = ref(0);
+        const activityList = ref([]);
+        const categories = ref([]);
+        const loggedIn = computed(() => isLoggedIn());
+        const user = computed(() => getCurrentUser());
+
+        const filters = reactive({
+            categoryId: parseInt(getQueryParam('categoryId')) || 0,
+            keyword: getQueryParam('keyword') || '',
+            dateRange: null,
+            minPrice: '',
+            maxPrice: '',
+            sortField: ''
+        });
+
+        const normalizeImageUrl = (url) => {
+            if (!url) return '';
+            const cleaned = url.trim().split(/\s+/)[0];
+            if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+                return cleaned;
+            }
+            return cleaned.startsWith('/') ? cleaned : '/' + cleaned;
+        };
+
+        const grabTagType = (status) => {
+            if (status === 'GRABBING') return 'danger';
+            if (status === 'NOT_STARTED') return 'warning';
+            if (status === 'ENDED') return 'info';
+            return 'success';
+        };
+        const grabTagText = (item) => {
+            if (item.grabStatus === 'GRABBING') return '抢票中';
+            if (item.grabStatus === 'NOT_STARTED') return '未开启';
+            if (item.grabStatus === 'ENDED') return '已结束';
+            return '可购买';
+        };
+
+        const loadCategories = async () => {
+            try {
+                const data = await get('/category/list');
+                categories.value = Array.isArray(data) ? data : [];
+            } catch (e) { console.error(e); }
+        };
+
+        const loadList = async () => {
+            loading.value = true;
+            try {
+                const params = new URLSearchParams();
+                params.set('page', page.value);
+                params.set('size', size.value);
+                if (filters.categoryId) params.set('categoryId', filters.categoryId);
+                if (filters.keyword) params.set('keyword', filters.keyword);
+                if (filters.dateRange && filters.dateRange[0]) params.set('startTime', filters.dateRange[0] + ' 00:00:00');
+                if (filters.dateRange && filters.dateRange[1]) params.set('endTime', filters.dateRange[1] + ' 23:59:59');
+                if (filters.minPrice) params.set('minPrice', filters.minPrice);
+                if (filters.maxPrice) params.set('maxPrice', filters.maxPrice);
+                if (filters.sortField) {
+                    if (filters.sortField === 'price_desc') {
+                        params.set('sortField', 'price');
+                        params.set('sortOrder', 'desc');
+                    } else {
+                        params.set('sortField', filters.sortField);
+                        params.set('sortOrder', filters.sortField === 'price' ? 'asc' : 'desc');
+                    }
+                }
+                const data = await get('/activity/list?' + params.toString());
+                activityList.value = data?.records || [];
+                total.value = data?.total || 0;
+            } catch (e) { console.error(e); }
+            finally { loading.value = false; }
+        };
+
+        const handleSearch = () => { page.value = 1; loadList(); };
+        const resetFilters = () => {
+            filters.categoryId = 0; filters.keyword = ''; filters.dateRange = null;
+            filters.minPrice = ''; filters.maxPrice = ''; filters.sortField = '';
+            handleSearch();
+        };
+        const goDetail = (id) => { window.location.href = '/page/activity/detail?id=' + id; };
+        const handleLogout = () => { logout(); };
+
+        onMounted(() => { loadCategories(); loadList(); });
+
+        return {
+            loading, page, size, total, activityList, categories, loggedIn, user,
+            filters, grabTagType, grabTagText, handleSearch, resetFilters, goDetail, handleLogout, formatTime, normalizeImageUrl
+        };
+    }
+});
+app.use(ElementPlus);
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>

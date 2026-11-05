@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运营管理中心</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: 'Microsoft YaHei', sans-serif; }
+        .layout { display: flex; height: 100vh; }
+        .sidebar {
+            width: 220px; background: #304156; color: #fff; display: flex;
+            flex-direction: column; flex-shrink: 0;
+        }
+        .sidebar-logo {
+            height: 60px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-menu { flex: 1; padding-top: 10px; overflow-y: auto; }
+        .sidebar-menu .menu-item {
+            display: flex; align-items: center; padding: 12px 24px; color: #bfcbd9;
+            text-decoration: none; font-size: 14px; cursor: pointer; transition: all .3s;
+        }
+        .sidebar-menu .menu-item:hover,
+        .sidebar-menu .menu-item.active { background: #263445; color: #409eff; }
+        .sidebar-menu .menu-item .el-icon { margin-right: 10px; }
+        .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-footer .logout-btn {
+            width: 100%; color: #bfcbd9; cursor: pointer; font-size: 14px;
+            display: flex; align-items: center;
+        }
+        .sidebar-footer .logout-btn:hover { color: #f56c6c; }
+        .main-content { flex: 1; background: #f0f2f5; padding: 24px; overflow-y: auto; }
+
+        .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
+        .stat-card {
+            background: #fff; border-radius: 8px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            position: relative; overflow: hidden;
+        }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+        }
+        .stat-card:nth-child(1)::before { background: #409eff; }
+        .stat-card:nth-child(2)::before { background: #67c23a; }
+        .stat-card:nth-child(3)::before { background: #e6a23c; }
+        .stat-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .stat-card:nth-child(1) .stat-icon { background: #ecf5ff; color: #409eff; }
+        .stat-card:nth-child(2) .stat-icon { background: #f0f9eb; color: #67c23a; }
+        .stat-card:nth-child(3) .stat-icon { background: #fdf6ec; color: #e6a23c; }
+        .stat-value { font-size: 28px; font-weight: bold; margin: 12px 0 4px; }
+        .stat-card:nth-child(1) .stat-value { color: #409eff; }
+        .stat-card:nth-child(2) .stat-value { color: #67c23a; }
+        .stat-card:nth-child(3) .stat-value { color: #e6a23c; }
+        .stat-label { font-size: 14px; color: #909399; }
+
+        .chart-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+        .chart-card {
+            background: #fff; border-radius: 8px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .card-title {
+            font-size: 16px; font-weight: bold; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px; color: #303133;
+        }
+        .card-title .el-icon { color: #409eff; }
+
+        .table-card {
+            background: #fff; border-radius: 8px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .pagination-wrap { margin-top: 20px; display: flex; justify-content: flex-end; }
+
+        .bar-chart-container { height: 200px; display: flex; align-items: flex-end; justify-content: space-around; gap: 10px; padding-top: 20px; }
+        .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .bar { width: 100%; max-width: 40px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #409eff 0%, #66b1ff 100%); transition: height 0.5s; }
+        .bar-label { font-size: 11px; color: #909399; margin-top: 8px; }
+        .bar-value { font-size: 12px; font-weight: bold; color: #606266; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+<div id="app" th:inline="none">
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-logo">🎫 运营中心</div>
+            <div class="sidebar-menu">
+                <a class="menu-item active" href="/page/operator/dashboard">
+                    <el-icon><DataBoard /></el-icon>数据概览
+                </a>
+                <a class="menu-item" href="/page/operator/activities">
+                    <el-icon><Ticket /></el-icon>活动管理
+                </a>
+                <a class="menu-item" href="/page/operator/orders">
+                    <el-icon><List /></el-icon>订单管理
+                </a>
+                <a class="menu-item" href="/page/operator/announcements">
+                    <el-icon><Bell /></el-icon>公告管理
+                </a>
+            </div>
+            <div class="sidebar-footer">
+                <div class="logout-btn" style="margin-bottom: 12px;" v-if="userRole === 2" @click="switchToAdmin">
+                    <el-icon><Setting /></el-icon> 管理员界面
+                </div>
+                <div class="logout-btn" style="margin-bottom: 12px;" @click="switchToUser">
+                    <el-icon><User /></el-icon> 用户界面
+                </div>
+                <div class="logout-btn" @click="handleLogout">
+                    <el-icon><SwitchButton /></el-icon> 退出登录
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="stat-cards">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon"><el-icon><Ticket /></el-icon></div>
+                    </div>
+                    <div class="stat-value">{{ overview.totalActivities || 0 }}</div>
+                    <div class="stat-label">总活动数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon"><el-icon><List /></el-icon></div>
+                    </div>
+                    <div class="stat-value">{{ overview.totalOrders || 0 }}</div>
+                    <div class="stat-label">总订单数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon"><el-icon><Money /></el-icon></div>
+                    </div>
+                    <div class="stat-value">¥{{ formatAmount(overview.totalRevenue) }}</div>
+                    <div class="stat-label">总收入</div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-card">
+                    <div class="card-title"><el-icon><TrendCharts /></el-icon> 近7日订单量</div>
+                    <div class="bar-chart-container">
+                        <div v-for="(item, index) in dailyOrders" :key="index" class="bar-item">
+                            <span class="bar-value">{{ item.totalOrders }}</span>
+                            <div class="bar" :style="{ height: getBarHeight(item.totalOrders, dailyOrders) }"></div>
+                            <span class="bar-label">{{ item.date }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="card-title"><el-icon><Ticket /></el-icon> 热门活动</div>
+                    <el-table :data="hotActivities" stripe style="width: 100%">
+                        <el-table-column prop="title" label="活动名称" min-width="150" />
+                        <el-table-column prop="sales" label="销量" width="80" />
+                        <el-table-column prop="revenue" label="收入" width="100">
+                            <template #default="{ row }">¥{{ formatAmount(row.revenue) }}</template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="card-title"><el-icon><Clock /></el-icon> 待处理订单</div>
+                <el-table :data="pendingOrders" stripe style="width: 100%">
+                    <el-table-column prop="orderNo" label="订单号" width="180" />
+                    <el-table-column prop="activityTitle" label="活动名称" min-width="150" />
+                    <el-table-column prop="userNickname" label="用户" width="100" />
+                    <el-table-column prop="totalAmount" label="金额" width="100">
+                        <template #default="{ row }">¥{{ formatAmount(row.totalAmount) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="status" label="状态" width="80">
+                        <template #default="{ row }">
+                            <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="createTime" label="创建时间" width="170">
+                        <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
+                    </el-table-column>
+                </el-table>
+                <div class="pagination-wrap">
+                    <el-pagination
+                        background
+                        layout="total, prev, pager, next"
+                        :total="pendingOrdersTotal"
+                        :page-size="10"
+                        :current-page="pendingPage"
+                        @current-change="loadPendingOrders"
+                    />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.2.36/dist/index.css"></script>
+<script src="https://unpkg.com/element-plus@2.2.36/dist/index.full.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const { createApp, ref, onMounted } = Vue;
+const app = createApp({
+    setup() {
+        const overview = ref({});
+        const hotActivities = ref([]);
+        const dailyOrders = ref([]);
+        const pendingOrders = ref([]);
+        const pendingOrdersTotal = ref(0);
+        const pendingPage = ref(1);
+
+        const formatAmount = (amount) => {
+            if (!amount) return '0.00';
+            const num = parseFloat(amount);
+            if (num >= 10000) return (num / 10000).toFixed(2) + '万';
+            return num.toFixed(2);
+        };
+
+        const formatTime = (val) => {
+            if (!val) return '-';
+            const str = String(val);
+            return str.replace('T', ' ').substring(0, 19);
+        };
+
+        const getBarHeight = (value, data) => {
+            const max = Math.max(...data.map(d => d.totalOrders || 0), 1);
+            return (value / max * 150) + 'px';
+        };
+
+        const getStatusText = (status) => {
+            const map = { 0: '待支付', 1: '已支付', 2: '已出票', 3: '已完成', 4: '已取消', 5: '已过期' };
+            return map[status] || '未知';
+        };
+
+        const getStatusType = (status) => {
+            const map = { 0: 'warning', 1: 'success', 2: 'primary', 3: '', 4: 'info', 5: 'danger' };
+            return map[status] || '';
+        };
+
+        const loadData = async () => {
+            try {
+                const [overviewData, hotData, dailyData] = await Promise.all([
+                    get('/admin/stats/overview'),
+                    get('/admin/stats/hot-activities'),
+                    get('/admin/stats/daily-orders')
+                ]);
+                overview.value = overviewData || {};
+                hotActivities.value = Array.isArray(hotData) ? hotData.slice(0, 5) : [];
+                dailyOrders.value = Array.isArray(dailyData) ? dailyData.slice(-7) : [];
+            } catch (e) { console.error('加载数据失败:', e); }
+        };
+
+        const loadPendingOrders = async (page) => {
+            pendingPage.value = page;
+            try {
+                const res = await get('/admin/orders?page=' + page + '&size=10&status=0');
+                pendingOrders.value = res?.records || res || [];
+                pendingOrdersTotal.value = res?.total || 0;
+            } catch (e) { console.error(e); }
+        };
+
+        const handleLogout = () => { logout(); };
+
+        const switchToUser = () => {
+            window.location.href = '/page/user/center';
+        };
+
+        const userRole = ref(() => {
+            const user = getCurrentUser();
+            return user?.role ?? 0;
+        });
+
+        const switchToAdmin = () => { window.location.href = '/page/admin/dashboard'; };
+
+        onMounted(() => {
+            loadData();
+            loadPendingOrders(1);
+        });
+
+        return {
+            overview, hotActivities, dailyOrders, pendingOrders, pendingOrdersTotal, pendingPage,
+            userRole, handleLogout, switchToUser, switchToAdmin,
+            formatAmount, formatTime, getBarHeight, getStatusText, getStatusType,
+            loadPendingOrders
+        };
+    }
+});
+app.use(ElementPlus);
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>

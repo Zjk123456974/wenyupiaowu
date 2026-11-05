@@ -1,0 +1,568 @@
+﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情 - 智能文娱票务系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: 'Microsoft YaHei', sans-serif; background: #f5f7fa; }
+        #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+        .top-nav {
+            background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky; top: 0; z-index: 100; height: 64px;
+            display: flex; align-items: center; padding: 0 32px;
+        }
+        .nav-logo { font-size: 20px; font-weight: bold; color: #409eff; margin-right: 48px; white-space: nowrap; }
+        .nav-menu { display: flex; gap: 32px; flex: 1; }
+        .nav-menu a {
+            font-size: 15px; color: #606266; text-decoration: none; padding: 4px 0;
+            border-bottom: 2px solid transparent; transition: all .3s;
+        }
+        .nav-menu a:hover, .nav-menu a.active { color: #409eff; border-bottom-color: #409eff; }
+        .nav-right { display: flex; align-items: center; gap: 16px; }
+        .nav-right a { font-size: 14px; color: #606266; text-decoration: none; }
+        .nav-right a:hover { color: #409eff; }
+
+        .main-wrap { flex: 1; padding: 24px 32px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+        .detail-card {
+            background: #fff; border-radius: 12px; padding: 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 24px;
+        }
+        .detail-header { display: flex; gap: 32px; }
+        .detail-cover {
+            width: 420px; min-width: 420px; height: 280px; border-radius: 10px;
+            overflow: hidden; background: #e9ecef; display: flex;
+            align-items: center; justify-content: center; color: #c0c4cc; font-size: 64px; flex-shrink: 0;
+        }
+        .detail-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .detail-info { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .detail-title { font-size: 24px; font-weight: bold; color: #303133; line-height: 1.4; }
+        .detail-tags { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .detail-row { font-size: 14px; color: #606266; display: flex; align-items: center; gap: 6px; }
+        .detail-row .label { color: #909399; min-width: 64px; }
+        .detail-row .value { color: #303133; }
+        .detail-price-row { display: flex; align-items: baseline; gap: 12px; margin-top: 8px; }
+        .detail-price { font-size: 36px; font-weight: bold; color: #f56c6c; }
+        .detail-price small { font-size: 18px; font-weight: normal; }
+        .detail-remain { font-size: 14px; color: #e6a23c; margin-left: 8px; }
+
+        .grab-area {
+            background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+            border: 1px solid #fde2e2; border-radius: 10px;
+            padding: 20px 24px; margin-top: 16px;
+            display: flex; align-items: center; justify-content: space-between; gap: 20px;
+        }
+        .grab-left { display: flex; align-items: center; gap: 16px; flex: 1; }
+        .countdown-wrap { display: flex; align-items: center; gap: 8px; }
+        .countdown-wrap .cd-label { font-size: 14px; color: #909399; white-space: nowrap; }
+        .countdown-wrap .cd-time { font-size: 22px; font-weight: bold; color: #f56c6c; font-variant-numeric: tabular-nums; }
+        .grab-btn {
+            height: 48px; font-size: 18px; font-weight: bold; border-radius: 8px;
+            min-width: 160px; letter-spacing: 2px;
+        }
+        .quantity-selector { display: flex; align-items: center; gap: 8px; }
+        .quantity-selector .qs-label { font-size: 14px; color: #606266; white-space: nowrap; }
+        .ended-tag { font-size: 18px; padding: 10px 32px; }
+
+        .fav-btn { position: absolute; top: 32px; right: 32px; }
+
+        .tabs-card {
+            background: #fff; border-radius: 12px; padding: 24px 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 24px; min-height: 200px;
+        }
+        .tab-content { font-size: 14px; color: #606266; line-height: 2; white-space: pre-wrap; word-break: break-word; }
+        .tab-content img { max-width: 100%; border-radius: 6px; }
+        .tab-empty { text-align: center; color: #c0c4cc; padding: 40px 0; }
+
+        .ticket-types-card {
+            background: #fff; border-radius: 12px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 24px;
+        }
+        .ticket-types-header { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+        .ticket-types-header .tt-title { font-size: 18px; font-weight: bold; color: #303133; }
+        .ticket-types-header .tt-subtitle { font-size: 14px; color: #909399; }
+        .ticket-types-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .ticket-type-card {
+            border: 2px solid #e4e7ed; border-radius: 10px; padding: 20px;
+            cursor: pointer; transition: all .3s; position: relative;
+        }
+        .ticket-type-card:hover { border-color: #409eff; background: #fafafa; }
+        .ticket-type-card.selected { border-color: #f56c6c; background: #fff5f5; }
+        .ticket-type-card.selected .tt-radio { color: #f56c6c; }
+        .ticket-type-card.sold-out { opacity: 0.6; cursor: not-allowed; }
+        .ticket-type-card.sold-out:hover { border-color: #e4e7ed; background: transparent; }
+        .tt-radio { position: absolute; top: 16px; right: 16px; font-size: 18px; color: #c0c4cc; }
+        .tt-seat-type { font-size: 16px; font-weight: bold; color: #303133; margin-bottom: 8px; }
+        .tt-price-row { display: flex; align-items: baseline; gap: 8px; }
+        .tt-price { font-size: 28px; font-weight: bold; color: #f56c6c; }
+        .tt-price small { font-size: 14px; }
+        .tt-stock { font-size: 13px; color: #909399; margin-top: 4px; }
+        .tt-stock.low { color: #e6a23c; }
+        .tt-stock.sold { color: #f56c6c; }
+
+        .site-footer {
+            background: #2c3e50; color: rgba(255,255,255,0.6); text-align: center;
+            padding: 24px 0; margin-top: auto; font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            .detail-header { flex-direction: column; }
+            .detail-cover { width: 100%; min-width: auto; height: 220px; }
+            .grab-area { flex-direction: column; align-items: stretch; }
+            .ticket-types-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="top-nav">
+        <div class="nav-logo">🎫 智能文娱票务系统</div>
+        <div class="nav-menu">
+            <a href="/page/">首页</a>
+            <a href="/page/activity/list" :class="{ active: true }">活动浏览</a>
+        </div>
+        <div class="nav-right">
+            <template v-if="loggedIn">
+                <a href="/page/order/list">我的订单</a>
+                <a href="/page/user/center">个人中心</a>
+                <a v-if="user.role === 1" href="/page/operator/dashboard" style="color:#e6a23c;">运营后台</a>
+                <a v-if="user.role === 2" href="/page/admin/dashboard" style="color:#e6a23c;">管理后台</a>
+                <el-button type="danger" text @click="handleLogout">退出</el-button>
+            </template>
+            <template v-else>
+                <a href="/page/login">登录</a>
+                <a href="/page/register">注册</a>
+            </template>
+        </div>
+    </div>
+
+    <div class="main-wrap">
+        <div v-if="loading" style="text-align:center;padding:80px 0;">
+            <el-icon class="is-loading" :size="40" color="#409eff"><Loading /></el-icon>
+            <p style="margin-top:12px;color:#909399;">加载中...</p>
+        </div>
+
+        <div v-else-if="loadError" style="text-align:center;padding:80px 0;">
+            <el-icon :size="60" color="#c0c4cc"><WarningFilled /></el-icon>
+            <p style="margin-top:16px;color:#909399;font-size:16px;">{{ loadError }}</p>
+            <el-button type="primary" style="margin-top:20px;" @click="window.location.href='/page/activity/list'">返回活动列表</el-button>
+        </div>
+
+        <template v-else-if="activity && activity.id">
+            <div class="detail-card" style="position:relative;">
+                <el-button class="fav-btn" :type="isFav ? 'warning' : 'default'" circle
+                           :icon="isFav ? 'StarFilled' : 'Star'" :loading="favLoading"
+                           @click="toggleFavorite" size="large">
+                </el-button>
+
+                <div class="detail-header">
+                    <div class="detail-cover">
+                        <img v-if="activity.coverImage" :src="normalizeImageUrl(activity.coverImage)" :alt="activity.title" />
+                        <el-icon v-else><Picture /></el-icon>
+                    </div>
+                    <div class="detail-info">
+                        <div class="detail-title">{{ activity.title }}</div>
+                        <div class="detail-tags">
+                            <el-tag v-if="activity.categoryName" type="primary" effect="plain">{{ activity.categoryName }}</el-tag>
+                            <el-tag v-if="activity.grabStatus === 'GRABBING'" type="danger" effect="dark">🔥 抢票中</el-tag>
+                            <el-tag v-else-if="activity.grabStatus === 'NOT_STARTED'" type="warning" effect="dark">即将开抢</el-tag>
+                            <el-tag v-else-if="activity.grabStatus === 'ENDED'" type="info" effect="dark">已结束</el-tag>
+                        </div>
+                        <div class="detail-row"><span class="label">场馆：</span><span class="value">{{ activity.venue || '待定' }}</span></div>
+                        <div class="detail-row"><span class="label">活动时间：</span><span class="value">{{ formatTime(activity.startTime) }} ~ {{ formatTime(activity.endTime) }}</span></div>
+                        <div class="detail-row"><span class="label">限购数量：</span><span class="value">每人限购 {{ activity.purchaseLimit || 1 }} 张</span></div>
+                        <div class="detail-row"><span class="label">浏览次数：</span><span class="value">{{ activity.viewCount || 0 }} 次</span></div>
+
+                        <div class="detail-price-row">
+                            <span class="detail-price"><small>¥</small>{{ minPrice }}</span>
+                            <span style="color:#909399;">起</span>
+                            <span class="detail-remain">剩余 <strong>{{ remainTickets }}</strong> 张</span>
+                        </div>
+
+                        <div class="grab-area">
+                            <template v-if="activity.grabStatus === 'NOT_STARTED'">
+                                <div class="grab-left">
+                                    <div class="countdown-wrap">
+                                        <span class="cd-label">距开抢：</span>
+                                        <span class="cd-time">{{ countdownText }}</span>
+                                    </div>
+                                </div>
+                                <el-button type="warning" class="grab-btn" @click="showReservationDialog">预约抢票</el-button>
+                            </template>
+                            <template v-else-if="activity.grabStatus === 'GRABBING'">
+                                <div class="grab-left">
+                                    <div class="quantity-selector">
+                                        <span class="qs-label">购买数量：</span>
+                                        <el-input-number v-model="grabQuantity" :min="1" :max="maxPurchase" size="large" />
+                                    </div>
+                                </div>
+                                <el-button type="danger" class="grab-btn" @click="showGrabDialog" :disabled="!selectedTicketType || remainTickets <= 0">
+                                    {{ remainTickets <= 0 ? '已售罄' : '立即抢票' }}
+                                </el-button>
+                            </template>
+                            <template v-else>
+                                <div class="grab-left">
+                                    <el-tag type="info" size="large" class="ended-tag">抢票已结束</el-tag>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ticket-types-card" v-if="ticketPrices.length > 0">
+                <div class="ticket-types-header">
+                    <span class="tt-title">票档选择</span>
+                    <span class="tt-subtitle">请选择您要购买的票档</span>
+                </div>
+                <div class="ticket-types-grid">
+                    <div v-for="tp in ticketPrices" :key="tp.id"
+                         class="ticket-type-card"
+                         :class="{ selected: selectedTicketType?.id === tp.id, 'sold-out': tp.totalStock - tp.soldStock <= 0 }"
+                         @click="selectTicketType(tp)">
+                        <span class="tt-radio" v-if="tp.totalStock - tp.soldStock > 0">
+                            <el-icon v-if="selectedTicketType?.id === tp.id"><CheckCircleFilled /></el-icon>
+                            <el-icon v-else><Circle /></el-icon>
+                        </span>
+                        <span class="tt-radio" v-else><el-icon><CloseCircleFilled /></el-icon></span>
+                        <div class="tt-seat-type">{{ tp.seatType }}</div>
+                        <div class="tt-price-row">
+                            <span class="tt-price"><small>¥</small>{{ tp.price }}</span>
+                        </div>
+                        <div class="tt-stock" :class="{ low: (tp.totalStock - tp.soldStock) < 50 && (tp.totalStock - tp.soldStock) > 0, sold: tp.totalStock - tp.soldStock <= 0 }">
+                            <span v-if="tp.totalStock - tp.soldStock > 0">
+                                剩余 {{ tp.totalStock - tp.soldStock }} 张
+                            </span>
+                            <span v-else>已售罄</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabs-card">
+                <el-tabs v-model="activeTab">
+                    <el-tab-pane label="活动介绍" name="intro">
+                        <div class="tab-content" v-if="activity.description" v-html="activity.description"></div>
+                        <div class="tab-empty" v-else>
+                            <el-icon :size="40"><Document /></el-icon>
+                            <p style="margin-top:8px;">暂无活动介绍</p>
+                        </div>
+                    </el-tab-pane>
+                    <el-tab-pane label="票务规则" name="rule">
+                        <div class="tab-content" v-if="activity.ticketRule">{{ activity.ticketRule }}</div>
+                        <div class="tab-empty" v-else>
+                            <el-icon :size="40"><Ticket /></el-icon>
+                            <p style="margin-top:8px;">暂无票务规则</p>
+                        </div>
+                    </el-tab-pane>
+                    <el-tab-pane label="限购说明" name="limit">
+                        <div class="tab-content" v-if="purchaseLimitText">{{ purchaseLimitText }}</div>
+                        <div class="tab-empty" v-else>
+                            <el-icon :size="40"><Warning /></el-icon>
+                            <p style="margin-top:8px;">暂无限购说明</p>
+                        </div>
+                    </el-tab-pane>
+                </el-tabs>
+            </div>
+        </template>
+
+        <div v-else style="text-align:center;padding:80px 0;">
+            <el-empty description="未找到该活动" />
+        </div>
+    </div>
+
+    <div class="site-footer">© 2024 智能文娱票务系统 — 毕业设计项目</div>
+
+    <el-dialog v-model="grabDialogVisible" title="确认抢票" width="480px" :close-on-click-modal="false" center>
+        <div style="text-align:center;padding:8px 0;">
+            <p style="font-size:16px;color:#303133;margin-bottom:16px;">确认抢购以下活动门票？</p>
+            <div style="background:#f5f7fa;border-radius:8px;padding:16px;text-align:left;line-height:2;">
+                <p><strong>活动：</strong>{{ activity.title }}</p>
+                <p><strong>票档：</strong>{{ selectedTicketType?.seatType }}</p>
+                <p><strong>单价：</strong><span style="color:#f56c6c;font-weight:bold;">¥{{ selectedTicketType?.price }}</span></p>
+                <p><strong>数量：</strong>{{ grabQuantity }} 张</p>
+                <p><strong>合计：</strong><span style="color:#f56c6c;font-weight:bold;font-size:18px;">¥{{ totalPrice }}</span></p>
+            </div>
+        </div>
+        <template #footer>
+            <el-button @click="grabDialogVisible = false">取消</el-button>
+            <el-button type="danger" @click="handleGrab" :loading="grabLoading" size="large">确认抢票</el-button>
+        </template>
+    </el-dialog>
+
+    <el-dialog v-model="reservationDialogVisible" title="预约抢票" width="440px" :close-on-click-modal="false" center>
+        <div style="text-align:center;padding:8px 0;">
+            <p style="font-size:16px;color:#303133;margin-bottom:16px;">预约抢票后，开抢时将第一时间通知您！</p>
+            <div style="background:#f5f7fa;border-radius:8px;padding:16px;text-align:left;line-height:2;">
+                <p><strong>活动：</strong>{{ activity.title }}</p>
+                <p><strong>开抢时间：</strong>{{ formatTime(activity.grabStartTime) }}</p>
+                <p><strong>限购：</strong>{{ activity.purchaseLimit || 1 }} 张/人</p>
+            </div>
+        </div>
+        <template #footer>
+            <el-button @click="reservationDialogVisible = false">取消</el-button>
+            <el-button type="warning" @click="handleReservation" :loading="reservationLoading" size="large">确认预约</el-button>
+        </template>
+    </el-dialog>
+</div>
+
+<script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.2.36/dist/index.full.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+const app = createApp({
+    setup() {
+        const loading = ref(true);
+        const loadError = ref('');
+        const activity = ref({});
+        const ticketPrices = ref([]);
+        const activeTab = ref('intro');
+        const isFav = ref(false);
+        const favLoading = ref(false);
+
+        const grabQuantity = ref(1);
+        const selectedTicketType = ref(null);
+        const grabDialogVisible = ref(false);
+        const grabLoading = ref(false);
+
+        const reservationDialogVisible = ref(false);
+        const reservationLoading = ref(false);
+
+        const countdownText = ref('00:00:00');
+        let countdownTimer = null;
+
+        const loggedIn = computed(() => isLoggedIn());
+        const user = computed(() => getCurrentUser());
+
+        const activityId = getQueryParam('id');
+
+        const remainTickets = computed(() => {
+            if (activity.value.remainTickets !== undefined && activity.value.remainTickets !== null) {
+                return activity.value.remainTickets;
+            }
+            return (activity.value.totalTickets || 0) - (activity.value.soldTickets || 0);
+        });
+
+        const minPrice = computed(() => {
+            if (ticketPrices.value.length > 0) {
+                const prices = ticketPrices.value.filter(tp => tp.totalStock - tp.soldStock > 0).map(tp => parseFloat(tp.price));
+                return prices.length > 0 ? Math.min(...prices).toFixed(2) : (activity.value.price || '0.00');
+            }
+            return activity.value.price || '0.00';
+        });
+
+        const maxPurchase = computed(() => {
+            const limit = activity.value.purchaseLimit || 1;
+            return Math.min(limit, remainTickets.value);
+        });
+
+        const totalPrice = computed(() => {
+            if (!selectedTicketType.value) return '0.00';
+            return ((parseFloat(selectedTicketType.value.price) || 0) * grabQuantity.value).toFixed(2);
+        });
+
+        const purchaseLimitText = computed(() => {
+            const limit = activity.value.purchaseLimit;
+            if (!limit) return '';
+            return '每位用户限购 ' + limit + ' 张门票。\n\n请注意：\n1. 超出限购数量的订单将被系统自动取消。\n2. 同一活动不可重复下单超出限购数量。\n3. 请在支付有效期内完成支付，超时订单将自动取消。';
+        });
+
+        const loadDetail = async () => {
+            if (!activityId) {
+                loadError.value = '缺少活动ID参数';
+                loading.value = false;
+                return;
+            }
+            try {
+                const [actData, priceData] = await Promise.all([
+                    get('/activity/detail/' + activityId),
+                    get('/ticket-price/activity/' + activityId)
+                ]);
+                activity.value = actData || {};
+                ticketPrices.value = priceData || [];
+                grabQuantity.value = 1;
+                if (ticketPrices.value.length > 0 && ticketPrices.value[0].totalStock - ticketPrices.value[0].soldStock > 0) {
+                    selectedTicketType.value = ticketPrices.value[0];
+                }
+                if (activity.value.grabStatus === 'NOT_STARTED') {
+                    startCountdown();
+                }
+            } catch (e) {
+                console.error('加载活动详情失败:', e);
+                loadError.value = e.message || '加载活动详情失败';
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        const normalizeImageUrl = (url) => {
+            if (!url) return '';
+            const cleaned = url.trim().split(/\s+/)[0];
+            if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+                return cleaned;
+            }
+            return cleaned.startsWith('/') ? cleaned : '/' + cleaned;
+        };
+
+        const selectTicketType = (tp) => {
+            if (tp.totalStock - tp.soldStock > 0) {
+                selectedTicketType.value = tp;
+            }
+        };
+
+        const checkFavorite = async () => {
+            if (!loggedIn.value || !activityId) return;
+            try {
+                const data = await get('/user/center/favorites?page=1&size=1000');
+                const list = data.records || data || [];
+                isFav.value = list.some(item => String(item.activityId) === String(activityId));
+            } catch (e) {
+                console.warn('检查收藏状态失败:', e);
+            }
+        };
+
+        const toggleFavorite = async () => {
+            if (!loggedIn.value) {
+                ElementPlus.ElMessage.warning('请先登录');
+                window.location.href = '/page/login';
+                return;
+            }
+            favLoading.value = true;
+            try {
+                if (isFav.value) {
+                    await del('/user/center/favorite/' + activityId);
+                    isFav.value = false;
+                    ElementPlus.ElMessage.success('已取消收藏');
+                } else {
+                    await post('/user/center/favorite/' + activityId, {});
+                    isFav.value = true;
+                    ElementPlus.ElMessage.success('收藏成功');
+                }
+            } catch (e) {
+                ElementPlus.ElMessage.error(e.message || '操作失败');
+            } finally {
+                favLoading.value = false;
+            }
+        };
+
+        const startCountdown = () => {
+            updateCountdown();
+            countdownTimer = setInterval(updateCountdown, 1000);
+        };
+
+        const updateCountdown = () => {
+            if (!activity.value.grabStartTime) {
+                countdownText.value = '00:00:00';
+                return;
+            }
+            const start = new Date(activity.value.grabStartTime.replace('T', ' ')).getTime();
+            const now = Date.now();
+            const diff = start - now;
+            if (diff <= 0) {
+                countdownText.value = '00:00:00';
+                if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+                loadDetail();
+                return;
+            }
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            countdownText.value = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        };
+
+        const showGrabDialog = () => {
+            if (!loggedIn.value) {
+                ElementPlus.ElMessage.warning('请先登录');
+                window.location.href = '/page/login';
+                return;
+            }
+            if (!selectedTicketType.value) {
+                ElementPlus.ElMessage.warning('请先选择票档');
+                return;
+            }
+            if (remainTickets.value <= 0) {
+                ElementPlus.ElMessage.warning('已售罄');
+                return;
+            }
+            grabDialogVisible.value = true;
+        };
+
+        const handleGrab = async () => {
+            grabLoading.value = true;
+            try {
+                const res = await post('/ticket/grab?activityId=' + activityId + '&quantity=' + grabQuantity.value + '&ticketPriceId=' + selectedTicketType.value.id, {});
+                grabDialogVisible.value = false;
+                const orderId = res?.id || res;
+                if (orderId) {
+                    window.location.href = '/page/order/pay?id=' + orderId;
+                } else {
+                    ElementPlus.ElMessage.success('抢票成功！请到订单中完成支付');
+                    await loadDetail();
+                }
+            } catch (e) {
+                ElementPlus.ElMessage.error(e.message || '抢票失败');
+            } finally {
+                grabLoading.value = false;
+            }
+        };
+
+        const showReservationDialog = () => {
+            if (!loggedIn.value) {
+                ElementPlus.ElMessage.warning('请先登录');
+                window.location.href = '/page/login';
+                return;
+            }
+            reservationDialogVisible.value = true;
+        };
+
+        const handleReservation = async () => {
+            reservationLoading.value = true;
+            try {
+                await post('/reservation/apply?activityId=' + activityId, {});
+                ElementPlus.ElMessage.success('预约成功！开抢时将通知您');
+                reservationDialogVisible.value = false;
+            } catch (e) {
+                ElementPlus.ElMessage.error(e.message || '预约失败');
+            } finally {
+                reservationLoading.value = false;
+            }
+        };
+
+        const handleLogout = () => { logout(); };
+
+        onMounted(() => {
+            loadDetail().then(() => { checkFavorite(); });
+        });
+
+        onUnmounted(() => {
+            if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        });
+
+        return {
+            loading, loadError, activity, ticketPrices, activeTab, isFav, favLoading,
+            grabQuantity, selectedTicketType, grabDialogVisible, grabLoading,
+            reservationDialogVisible, reservationLoading,
+            countdownText, loggedIn, user,
+            remainTickets, minPrice, maxPurchase, totalPrice, purchaseLimitText,
+            selectTicketType, toggleFavorite, showGrabDialog, handleGrab,
+            showReservationDialog, handleReservation,
+            handleLogout, formatTime, normalizeImageUrl
+        };
+    }
+});
+
+app.use(ElementPlus);
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>

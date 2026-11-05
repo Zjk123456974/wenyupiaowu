@@ -1,0 +1,711 @@
+﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>收银台 - 智能文娱票务系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: 'Microsoft YaHei', sans-serif; background: #f5f7fa; }
+        #app { min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 80px; }
+
+        /* 顶部导航栏 */
+        .top-nav {
+            background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky; top: 0; z-index: 100; height: 60px;
+            display: flex; align-items: center; padding: 0 32px;
+        }
+        .nav-logo { font-size: 20px; font-weight: bold; color: #409eff; margin-right: 32px; white-space: nowrap; cursor: pointer; }
+        .nav-back {
+            display: flex; align-items: center; gap: 4px; font-size: 14px; color: #606266;
+            cursor: pointer; transition: color .3s; text-decoration: none;
+        }
+        .nav-back:hover { color: #409eff; }
+        .nav-title { font-size: 18px; font-weight: bold; color: #303133; flex: 1; text-align: center; }
+        .nav-countdown {
+            display: flex; align-items: center; gap: 8px; font-size: 14px; color: #606266;
+        }
+        .nav-countdown .cd-label { color: #909399; }
+        .nav-countdown .cd-time {
+            font-size: 18px; font-weight: bold; color: #f56c6c;
+            font-variant-numeric: tabular-nums; letter-spacing: 1px;
+        }
+        .nav-countdown.expired .cd-time { color: #909399; }
+
+        /* 主内容区 */
+        .main-wrap {
+            flex: 1; padding: 24px 32px; max-width: 1100px; margin: 0 auto; width: 100%;
+        }
+
+        /* 加载中 */
+        .loading-wrap { text-align: center; padding: 120px 0; }
+        .loading-wrap .el-icon { font-size: 40px; color: #409eff; }
+        .loading-wrap p { margin-top: 12px; color: #909399; }
+
+        /* 超时提示 */
+        .expired-notice {
+            background: #fff; border-radius: 12px; padding: 60px 32px; text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .expired-notice .icon { font-size: 64px; color: #c0c4cc; margin-bottom: 16px; }
+        .expired-notice .title { font-size: 20px; color: #303133; font-weight: bold; margin-bottom: 8px; }
+        .expired-notice .desc { font-size: 14px; color: #909399; }
+
+        /* 两栏布局 */
+        .pay-layout { display: flex; gap: 24px; }
+
+        /* 左侧：订单信息 */
+        .order-info-card {
+            flex: 0 0 60%; background: #fff; border-radius: 12px; padding: 28px 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .card-title {
+            font-size: 16px; font-weight: bold; color: #303133; margin-bottom: 20px;
+            padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-title .el-icon { color: #409eff; }
+
+        .order-activity {
+            display: flex; gap: 20px; margin-bottom: 24px;
+            padding: 16px; background: #f9fafc; border-radius: 10px;
+        }
+        .order-cover {
+            width: 120px; height: 80px; border-radius: 8px; overflow: hidden;
+            background: #e9ecef; flex-shrink: 0; display: flex; align-items: center;
+            justify-content: center; color: #c0c4cc; font-size: 32px;
+        }
+        .order-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .order-activity-info { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+        .order-activity-title {
+            font-size: 16px; font-weight: bold; color: #303133;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .order-activity-row { font-size: 13px; color: #909399; display: flex; align-items: center; gap: 4px; }
+
+        .order-detail-rows { display: flex; flex-direction: column; gap: 14px; }
+        .order-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 14px; padding: 0 4px;
+        }
+        .order-row .label { color: #909399; }
+        .order-row .value { color: #303133; }
+        .order-row .value.mono { font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+
+        .order-divider { height: 1px; background: #f0f0f0; margin: 8px 0; }
+
+        .order-total-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            padding: 12px 4px 0;
+        }
+        .order-total-row .label { font-size: 15px; color: #303133; font-weight: bold; }
+        .order-total-row .amount { font-size: 28px; font-weight: bold; color: #f56c6c; }
+        .order-total-row .amount small { font-size: 16px; }
+
+        /* 右侧：支付方式 */
+        .pay-method-card {
+            flex: 1; background: #fff; border-radius: 12px; padding: 28px 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .method-list { display: flex; flex-direction: column; gap: 12px; }
+        .method-item {
+            display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+            border: 2px solid #e4e7ed; border-radius: 10px; cursor: pointer;
+            transition: all .25s; background: #fff;
+        }
+        .method-item:hover { border-color: #c0c4cc; background: #f9fafc; }
+        .method-item.selected { border-color: #409eff; background: #ecf5ff; }
+        .method-icon {
+            width: 40px; height: 40px; border-radius: 8px; display: flex;
+            align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+        }
+        .method-icon.alipay { background: #e6f4ff; color: #1677ff; }
+        .method-icon.wechat { background: #e8f8e8; color: #07c160; }
+        .method-icon.bank { background: #fff3e0; color: #ed6c00; }
+        .method-name { font-size: 15px; color: #303133; font-weight: 500; flex: 1; }
+        .method-desc { font-size: 12px; color: #c0c4cc; }
+        .method-check {
+            width: 22px; height: 22px; border-radius: 50%; border: 2px solid #dcdfe6;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: all .25s;
+        }
+        .method-item.selected .method-check {
+            border-color: #409eff; background: #409eff; color: #fff;
+        }
+
+        .pay-security {
+            margin-top: 24px; padding: 12px 16px; background: #f9fafc; border-radius: 8px;
+            display: flex; align-items: center; gap: 8px; font-size: 12px; color: #909399;
+        }
+        .pay-security .el-icon { color: #67c23a; font-size: 16px; }
+
+        /* 底部支付栏 */
+        .bottom-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 72px;
+            background: #fff; box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 32px; z-index: 200;
+        }
+        .bottom-left { display: flex; align-items: baseline; gap: 8px; }
+        .bottom-label { font-size: 14px; color: #606266; }
+        .bottom-amount { font-size: 28px; font-weight: bold; color: #f56c6c; }
+        .bottom-amount small { font-size: 16px; font-weight: normal; }
+        .bottom-right { display: flex; align-items: center; gap: 12px; }
+        .pay-btn {
+            height: 48px; font-size: 18px; font-weight: bold; border-radius: 8px;
+            min-width: 180px; letter-spacing: 2px; border: none; cursor: pointer;
+            background: linear-gradient(135deg, #ff4d4f 0%, #f56c6c 100%);
+            color: #fff; transition: all .3s; display: flex; align-items: center;
+            justify-content: center; gap: 6px;
+        }
+        .pay-btn:hover { background: linear-gradient(135deg, #ff3333 0%, #f56c6c 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245,108,108,.4); }
+        .pay-btn:active { transform: translateY(0); }
+        .pay-btn:disabled {
+            background: #c0c4cc; cursor: not-allowed; transform: none;
+            box-shadow: none;
+        }
+        .cancel-btn {
+            height: 48px; font-size: 14px; border-radius: 8px; min-width: 100px;
+        }
+
+        /* 支付对话框 */
+        .pay-dialog-content { text-align: center; padding: 12px 0; }
+        .pay-dialog-content .channel-icon {
+            width: 56px; height: 56px; border-radius: 12px; margin: 0 auto 16px;
+            display: flex; align-items: center; justify-content: center; font-size: 32px;
+        }
+        .pay-dialog-content .channel-icon.alipay { background: #e6f4ff; color: #1677ff; }
+        .pay-dialog-content .channel-icon.wechat { background: #e8f8e8; color: #07c160; }
+        .pay-dialog-content .channel-icon.bank { background: #fff3e0; color: #ed6c00; }
+        .pay-dialog-content .channel-title { font-size: 16px; font-weight: bold; color: #303133; margin-bottom: 20px; }
+        .qr-area {
+            width: 180px; height: 180px; margin: 0 auto 16px; border-radius: 8px;
+            background: #f5f7fa; border: 1px dashed #dcdfe6;
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .qr-area .qr-placeholder { color: #c0c4cc; font-size: 48px; }
+        .qr-area .qr-scanning {
+            position: absolute; inset: 0; display: flex; align-items: center;
+            justify-content: center; background: rgba(255,255,255,0.85);
+        }
+        .qr-area .qr-scanning .el-icon { font-size: 32px; color: #409eff; }
+        .pay-dialog-content .scan-tip { font-size: 14px; color: #909399; margin-top: 4px; }
+        .pay-dialog-content .pay-amount { font-size: 24px; font-weight: bold; color: #f56c6c; margin-top: 16px; }
+        .pay-dialog-content .pay-amount small { font-size: 14px; }
+
+        /* 银行卡表单 */
+        .bank-form { max-width: 320px; margin: 0 auto; text-align: left; }
+
+        /* 支付进度 */
+        .pay-progress { margin-top: 20px; }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .pay-layout { flex-direction: column; }
+            .order-info-card { flex: auto; }
+            .main-wrap { padding: 16px; }
+            .top-nav { padding: 0 16px; }
+            .bottom-bar { padding: 0 16px; }
+            .pay-btn { min-width: 140px; font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <!-- 顶部导航栏 -->
+    <div class="top-nav">
+        <div class="nav-logo" @click="window.location.href='/page/'">🎫 智能文娱票务系统</div>
+        <a class="nav-back" href="javascript:void(0)" @click="goBack">
+            <el-icon><ArrowLeft /></el-icon> 返回
+        </a>
+        <div class="nav-title">收银台</div>
+        <div class="nav-countdown" :class="{ expired: isExpired }">
+            <template v-if="isExpired">
+                <span class="cd-label">订单已超时</span>
+                <el-icon style="color:#f56c6c;"><WarningFilled /></el-icon>
+            </template>
+            <template v-else>
+                <span class="cd-label">剩余支付时间</span>
+                <span class="cd-time">{{ countdownText }}</span>
+            </template>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-wrap">
+        <!-- 加载中 -->
+        <div v-if="loading" class="loading-wrap">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            <p>正在加载订单信息...</p>
+        </div>
+
+        <!-- 加载失败 -->
+        <div v-else-if="loadError" class="loading-wrap">
+            <el-icon :size="60" color="#c0c4cc"><WarningFilled /></el-icon>
+            <p style="margin-top:16px;font-size:16px;">{{ loadError }}</p>
+            <el-button type="primary" style="margin-top:20px;" @click="window.location.href='/page/user/center?tab=orders'">返回我的订单</el-button>
+        </div>
+
+        <!-- 订单已超时 -->
+        <div v-else-if="isExpired" class="expired-notice">
+            <div class="icon"><el-icon :size="64"><Clock /></el-icon></div>
+            <div class="title">订单支付时间已过</div>
+            <div class="desc">该订单已超时，请重新下单</div>
+            <el-button type="primary" style="margin-top:24px;" @click="window.location.href='/page/activity/list'">浏览活动</el-button>
+        </div>
+
+        <!-- 正常支付界面 -->
+        <template v-else-if="order">
+            <div class="pay-layout">
+                <!-- 左侧：订单信息 -->
+                <div class="order-info-card">
+                    <div class="card-title">
+                        <el-icon><Document /></el-icon> 订单信息
+                    </div>
+
+                    <!-- 活动信息 -->
+                    <div class="order-activity">
+                        <div class="order-cover">
+                            <img v-if="order.coverImage" :src="normalizeImageUrl(order.coverImage)" alt="封面" />
+                            <el-icon v-else><Picture /></el-icon>
+                        </div>
+                        <div class="order-activity-info">
+                            <div class="order-activity-title">{{ order.activityTitle || '活动' }}</div>
+                            <div class="order-activity-row">
+                                <el-icon><Location /></el-icon> {{ order.venue || '待定' }}
+                            </div>
+                            <div class="order-activity-row">
+                                <el-icon><Calendar /></el-icon> {{ formatTime(order.activityStartTime) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 订单详情 -->
+                    <div class="order-detail-rows">
+                        <div class="order-row">
+                            <span class="label">订单编号</span>
+                            <span class="value mono">{{ order.orderNo }}</span>
+                        </div>
+                        <div class="order-row">
+                            <span class="label">票品数量</span>
+                            <span class="value">{{ order.quantity }} 张</span>
+                        </div>
+                        <div class="order-row">
+                            <span class="label">单价</span>
+                            <span class="value" style="color:#f56c6c;">¥{{ unitPrice }}</span>
+                        </div>
+                        <div class="order-row">
+                            <span class="label">下单时间</span>
+                            <span class="value">{{ formatTime(order.createTime) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="order-divider"></div>
+
+                    <!-- 总金额 -->
+                    <div class="order-total-row">
+                        <span class="label">应付金额</span>
+                        <span class="amount"><small>¥</small>{{ formatAmount(order.totalAmount) }}</span>
+                    </div>
+                </div>
+
+                <!-- 右侧：支付方式 -->
+                <div class="pay-method-card">
+                    <div class="card-title">
+                        <el-icon><CreditCard /></el-icon> 支付方式
+                    </div>
+
+                    <div class="method-list">
+                        <!-- 支付宝 -->
+                        <div class="method-item" :class="{ selected: payMethod === 'alipay' }" @click="payMethod = 'alipay'">
+                            <div class="method-icon alipay">
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                                    <path d="M21.422 15.358c-2.096-.56-4.986-1.994-4.986-1.994a9.3 9.3 0 0 0 1.066-4.418c0-2.432-1.5-3.946-3.636-3.946-2.136 0-3.698 1.514-3.698 3.946 0 2.412 1.504 3.934 3.636 3.934.768 0 1.466-.2 2.072-.56.256.44.672 1.14.672 1.14s2.898 1.568 5.344 2.168c.08.02.136.03.164.03v.01c-.24.668-.79 1.1-1.424 1.1H2.8c-.8 0-1.5-.7-1.5-1.5V7.3c0-.8.7-1.5 1.5-1.5h9.6c.1 0 .2.02.3.04-.06-.32-.08-.66-.08-1.02 0-.24.02-.48.04-.72H2.8C1.2 4.1 0 5.3 0 7.3v9.8c0 2 1.2 3.2 2.8 3.2h17.634c1.6 0 2.8-1.2 2.8-3.2v-1.17c-.01-.01-.55-.14-.812-.572z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="method-name">支付宝</div>
+                                <div class="method-desc">推荐使用，支付更便捷</div>
+                            </div>
+                            <div class="method-check">
+                                <el-icon v-if="payMethod === 'alipay'" :size="14"><Check /></el-icon>
+                            </div>
+                        </div>
+
+                        <!-- 微信支付 -->
+                        <div class="method-item" :class="{ selected: payMethod === 'wechat' }" @click="payMethod = 'wechat'">
+                            <div class="method-icon wechat">
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                                    <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.074-.017.14.014.206.03.066.089.11.156.11a.226.226 0 0 0 .148-.06l1.938-1.33a.594.594 0 0 1 .494-.074c1.07.3 2.2.46 3.374.46.22 0 .44-.006.66-.016A5.726 5.726 0 0 1 8.2 14.72c0-3.442 3.17-6.24 7.076-6.24.3 0 .594.02.884.044C15.527 4.374 12.432 2.188 8.691 2.188zm-2.6 4.42a1.06 1.06 0 1 1 0 2.12 1.06 1.06 0 0 1 0-2.12zm5.2 0a1.06 1.06 0 1 1 0 2.12 1.06 1.06 0 0 1 0-2.12zM15.276 9.2c-3.334 0-6.04 2.34-6.04 5.22 0 2.88 2.706 5.22 6.04 5.22.9 0 1.76-.16 2.554-.44a.476.476 0 0 1 .396.06l1.446.99a.176.176 0 0 0 .248-.046.176.176 0 0 0 .014-.198l-.292-1.106a.472.472 0 0 1 .17-.526C21.276 17.24 22.2 15.65 22.2 14.42c0-2.88-2.706-5.22-6.04-5.22h-.884zm-2.38 3.04a.84.84 0 1 1 0 1.68.84.84 0 0 1 0-1.68zm4.76 0a.84.84 0 1 1 0 1.68.84.84 0 0 1 0-1.68z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="method-name">微信支付</div>
+                                <div class="method-desc">微信扫码安全支付</div>
+                            </div>
+                            <div class="method-check">
+                                <el-icon v-if="payMethod === 'wechat'" :size="14"><Check /></el-icon>
+                            </div>
+                        </div>
+
+                        <!-- 银行卡支付 -->
+                        <div class="method-item" :class="{ selected: payMethod === 'bank' }" @click="payMethod = 'bank'">
+                            <div class="method-icon bank">
+                                <el-icon :size="24"><CreditCard /></el-icon>
+                            </div>
+                            <div>
+                                <div class="method-name">银行卡支付</div>
+                                <div class="method-desc">支持主流银行借记卡/信用卡</div>
+                            </div>
+                            <div class="method-check">
+                                <el-icon v-if="payMethod === 'bank'" :size="14"><Check /></el-icon>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 安全提示 -->
+                    <div class="pay-security">
+                        <el-icon><CircleCheck /></el-icon>
+                        <span>支付环境安全，由智能文娱票务系统提供保障</span>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- 底部支付栏 -->
+    <div class="bottom-bar" v-if="order && !isExpired && !loading && !loadError">
+        <div class="bottom-left">
+            <span class="bottom-label">合计：</span>
+            <span class="bottom-amount"><small>¥</small>{{ formatAmount(order.totalAmount) }}</span>
+        </div>
+        <div class="bottom-right">
+            <el-button class="cancel-btn" @click="handleCancel" :disabled="payLoading">取消订单</el-button>
+            <button class="pay-btn" @click="handlePay" :disabled="payLoading || isExpired">
+                <el-icon v-if="payLoading" class="is-loading"><Loading /></el-icon>
+                <span>{{ payLoading ? '支付中...' : '立即支付' }}</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 支付模拟对话框 -->
+    <el-dialog v-model="payDialogVisible" :title="payDialogTitle" width="440px" :close-on-click-modal="false" :show-close="!paySimulating" center>
+        <div class="pay-dialog-content">
+            <!-- 支付宝/微信：二维码 -->
+            <template v-if="payMethod === 'alipay' || payMethod === 'wechat'">
+                <div class="channel-icon" :class="payMethod">
+                    <svg v-if="payMethod === 'alipay'" viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                        <path d="M21.422 15.358c-2.096-.56-4.986-1.994-4.986-1.994a9.3 9.3 0 0 0 1.066-4.418c0-2.432-1.5-3.946-3.636-3.946-2.136 0-3.698 1.514-3.698 3.946 0 2.412 1.504 3.934 3.636 3.934.768 0 1.466-.2 2.072-.56.256.44.672 1.14.672 1.14s2.898 1.568 5.344 2.168c.08.02.136.03.164.03v.01c-.24.668-.79 1.1-1.424 1.1H2.8c-.8 0-1.5-.7-1.5-1.5V7.3c0-.8.7-1.5 1.5-1.5h9.6c.1 0 .2.02.3.04-.06-.32-.08-.66-.08-1.02 0-.24.02-.48.04-.72H2.8C1.2 4.1 0 5.3 0 7.3v9.8c0 2 1.2 3.2 2.8 3.2h17.634c1.6 0 2.8-1.2 2.8-3.2v-1.17c-.01-.01-.55-.14-.812-.572z"/>
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                        <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.074-.017.14.014.206.03.066.089.11.156.11a.226.226 0 0 0 .148-.06l1.938-1.33a.594.594 0 0 1 .494-.074c1.07.3 2.2.46 3.374.46.22 0 .44-.006.66-.016A5.726 5.726 0 0 1 8.2 14.72c0-3.442 3.17-6.24 7.076-6.24.3 0 .594.02.884.044C15.527 4.374 12.432 2.188 8.691 2.188zm-2.6 4.42a1.06 1.06 0 1 1 0 2.12 1.06 1.06 0 0 1 0-2.12zm5.2 0a1.06 1.06 0 1 1 0 2.12 1.06 1.06 0 0 1 0-2.12zM15.276 9.2c-3.334 0-6.04 2.34-6.04 5.22 0 2.88 2.706 5.22 6.04 5.22.9 0 1.76-.16 2.554-.44a.476.476 0 0 1 .396.06l1.446.99a.176.176 0 0 0 .248-.046.176.176 0 0 0 .014-.198l-.292-1.106a.472.472 0 0 1 .17-.526C21.276 17.24 22.2 15.65 22.2 14.42c0-2.88-2.706-5.22-6.04-5.22h-.884zm-2.38 3.04a.84.84 0 1 1 0 1.68.84.84 0 0 1 0-1.68zm4.76 0a.84.84 0 1 1 0 1.68.84.84 0 0 1 0-1.68z"/>
+                    </svg>
+                </div>
+                <div class="channel-title">
+                    {{ payMethod === 'alipay' ? '请在支付宝中完成支付' : '请使用微信扫一扫完成支付' }}
+                </div>
+                <div class="qr-area">
+                    <el-icon class="qr-placeholder"><Iphone /></el-icon>
+                    <div class="qr-scanning" v-if="paySimulating">
+                        <el-icon class="is-loading"><Loading /></el-icon>
+                    </div>
+                </div>
+                <div class="scan-tip">
+                    {{ payMethod === 'alipay' ? '打开支付宝 APP，扫描上方二维码' : '打开微信 APP，扫描上方二维码' }}
+                </div>
+            </template>
+
+            <!-- 银行卡：卡号输入 -->
+            <template v-if="payMethod === 'bank'">
+                <div class="channel-icon bank">
+                    <el-icon :size="32"><CreditCard /></el-icon>
+                </div>
+                <div class="channel-title">请输入银行卡信息</div>
+                <div class="bank-form">
+                    <el-form :model="bankForm" label-width="80px">
+                        <el-form-item label="卡号">
+                            <el-input v-model="bankForm.cardNo" placeholder="请输入银行卡号" maxlength="23" :disabled="paySimulating" />
+                        </el-form-item>
+                        <el-form-item label="持卡人">
+                            <el-input v-model="bankForm.holder" placeholder="请输入持卡人姓名" :disabled="paySimulating" />
+                        </el-form-item>
+                    </el-form>
+                </div>
+            </template>
+
+            <div class="pay-amount"><small>¥</small>{{ order ? formatAmount(order.totalAmount) : '0.00' }}</div>
+
+            <!-- 支付进度 -->
+            <div class="pay-progress" v-if="paySimulating">
+                <el-progress :percentage="payProgress" :stroke-width="6" :show-text="false" color="#409eff" />
+                <p style="margin-top:8px;font-size:13px;color:#909399;">正在处理支付，请稍候...</p>
+            </div>
+        </div>
+        <template #footer v-if="!paySimulating">
+            <el-button @click="payDialogVisible = false">取消支付</el-button>
+            <button class="pay-btn" style="height:40px;font-size:15px;min-width:120px;letter-spacing:0;" @click="simulatePay">
+                确认支付
+            </button>
+        </template>
+    </el-dialog>
+
+    <!-- 取消订单确认 -->
+    <el-dialog v-model="cancelDialogVisible" title="取消订单" width="400px" center>
+        <div style="text-align:center;padding:8px 0;">
+            <el-icon :size="48" color="#e6a23c" style="margin-bottom:12px;"><WarningFilled /></el-icon>
+            <p style="font-size:15px;color:#303133;">确认取消该订单？</p>
+            <p style="font-size:13px;color:#909399;margin-top:8px;">取消后需重新抢票，库存不保证</p>
+        </div>
+        <template #footer>
+            <el-button @click="cancelDialogVisible = false">再想想</el-button>
+            <el-button type="warning" @click="confirmCancel" :loading="cancelLoading">确认取消</el-button>
+        </template>
+    </el-dialog>
+</div>
+
+<script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.2.36/dist/index.full.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+const app = createApp({
+    setup() {
+        const loading = ref(true);
+        const loadError = ref('');
+        const order = ref(null);
+        const orderId = getQueryParam('id');
+
+        // 支付方式
+        const payMethod = ref('alipay');
+
+        // 倒计时
+        const countdownText = ref('00:00');
+        const isExpired = ref(false);
+        let countdownTimer = null;
+
+        // 支付状态
+        const payLoading = ref(false);
+        const payDialogVisible = ref(false);
+        const paySimulating = ref(false);
+        const payProgress = ref(0);
+        let paySimTimer = null;
+
+        // 取消订单
+        const cancelDialogVisible = ref(false);
+        const cancelLoading = ref(false);
+
+        // 银行卡表单
+        const bankForm = ref({ cardNo: '', holder: '' });
+
+        // 计算单价
+        const unitPrice = computed(() => {
+            if (!order.value) return '0.00';
+            const total = parseFloat(order.value.totalAmount) || 0;
+            const qty = order.value.quantity || 1;
+            return (total / qty).toFixed(2);
+        });
+
+        // 支付对话框标题
+        const payDialogTitle = computed(() => {
+            const map = { alipay: '支付宝支付', wechat: '微信支付', bank: '银行卡支付' };
+            return map[payMethod.value] || '支付';
+        });
+
+        // 格式化金额
+        const normalizeImageUrl = (url) => {
+            if (!url) return '';
+            const cleaned = url.trim().split(/\s+/)[0];
+            if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+                return cleaned;
+            }
+            return cleaned.startsWith('/') ? cleaned : '/' + cleaned;
+        };
+
+        const formatAmount = (val) => {
+            const num = parseFloat(val);
+            if (isNaN(num)) return '0.00';
+            return num.toFixed(2);
+        };
+
+        const formatTime = (val) => {
+            if (!val) return '-';
+            const str = String(val);
+            return str.replace('T', ' ').substring(0, 19);
+        };
+
+        // 加载订单详情
+        const loadOrder = async () => {
+            if (!orderId) {
+                loadError.value = '缺少订单ID参数';
+                loading.value = false;
+                return;
+            }
+            try {
+                const data = await get('/order/detail/' + orderId);
+                order.value = data || null;
+                if (!order.value || !order.value.id) {
+                    loadError.value = '未找到该订单';
+                    loading.value = false;
+                    return;
+                }
+                // 检查订单状态
+                if (order.value.status !== 0) {
+                    // 非待支付状态，跳转结果页
+                    const statusMap = { 1: 'success', 2: 'cancel', 3: 'fail' };
+                    window.location.href = '/page/order/result?id=' + orderId + '&status=' + (statusMap[order.value.status] || 'fail');
+                    return;
+                }
+                // 启动倒计时
+                startCountdown();
+            } catch (e) {
+                console.error('加载订单详情失败:', e);
+                loadError.value = e.message || '加载订单信息失败';
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        // 倒计时逻辑
+        const startCountdown = () => {
+            updateCountdown();
+            countdownTimer = setInterval(updateCountdown, 1000);
+        };
+
+        const updateCountdown = () => {
+            if (!order.value || !order.value.expireTime) {
+                isExpired.value = true;
+                countdownText.value = '00:00';
+                stopCountdown();
+                return;
+            }
+            const expire = new Date(order.value.expireTime.replace('T', ' ')).getTime();
+            const now = Date.now();
+            const diff = expire - now;
+            if (diff <= 0) {
+                isExpired.value = true;
+                countdownText.value = '00:00';
+                stopCountdown();
+                return;
+            }
+            isExpired.value = false;
+            const m = Math.floor(diff / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            countdownText.value = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        };
+
+        const stopCountdown = () => {
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+        };
+
+        // 点击立即支付
+        const handlePay = () => {
+            if (isExpired.value || payLoading.value) return;
+            payDialogVisible.value = true;
+            paySimulating.value = false;
+            payProgress.value = 0;
+        };
+
+        // 模拟支付过程
+        const simulatePay = () => {
+            paySimulating.value = true;
+            payProgress.value = 0;
+
+            // 模拟支付进度
+            let progress = 0;
+            paySimTimer = setInterval(() => {
+                progress += Math.random() * 15 + 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(paySimTimer);
+                    paySimTimer = null;
+                    // 延迟一点后调用支付接口
+                    setTimeout(() => doPay(), 300);
+                }
+                payProgress.value = Math.min(Math.round(progress), 100);
+            }, 200);
+        };
+
+        // 调用支付接口
+        const doPay = async () => {
+            payLoading.value = true;
+            try {
+                await post('/order/pay/' + orderId);
+                payDialogVisible.value = false;
+                paySimulating.value = false;
+                // 跳转支付成功页
+                window.location.href = '/page/order/result?id=' + orderId + '&status=success';
+            } catch (e) {
+                payDialogVisible.value = false;
+                paySimulating.value = false;
+                payLoading.value = false;
+                ElementPlus.ElMessage.error(e.message || '支付失败，请重试');
+                // 跳转支付失败页
+                window.location.href = '/page/order/result?id=' + orderId + '&status=fail';
+            }
+        };
+
+        // 取消订单
+        const handleCancel = () => {
+            cancelDialogVisible.value = true;
+        };
+
+        const confirmCancel = async () => {
+            cancelLoading.value = true;
+            try {
+                await post('/order/cancel/' + orderId);
+                ElementPlus.ElMessage.success('订单已取消');
+                cancelDialogVisible.value = false;
+                // 返回个人中心
+                window.location.href = '/page/user/center?tab=orders';
+            } catch (e) {
+                ElementPlus.ElMessage.error(e.message || '取消失败');
+            } finally {
+                cancelLoading.value = false;
+            }
+        };
+
+        // 返回上一页
+        const goBack = () => {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/page/user/center?tab=orders';
+            }
+        };
+
+        onMounted(() => {
+            loadOrder();
+        });
+
+        onUnmounted(() => {
+            stopCountdown();
+            if (paySimTimer) { clearInterval(paySimTimer); paySimTimer = null; }
+        });
+
+        return {
+            loading, loadError, order, payMethod,
+            countdownText, isExpired,
+            payLoading, payDialogVisible, paySimulating, payProgress,
+            cancelDialogVisible, cancelLoading,
+            bankForm, unitPrice, payDialogTitle,
+            formatAmount, handlePay, simulatePay,
+            handleCancel, confirmCancel, goBack, formatTime, normalizeImageUrl
+        };
+    }
+});
+
+app.use(ElementPlus);
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>

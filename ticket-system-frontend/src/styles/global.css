@@ -1,0 +1,338 @@
+/* ===== 全局主题基座 ===== */
+:root {
+  /* 主品牌色（保持与 Element Plus 主色一致，避免新旧页面出现两种蓝） */
+  --brand-primary: #409eff;
+  --brand-deep: #2b6cb8;
+  /* 抢票热色系（大麦/猫眼风格红橙渐变） */
+  --grab-red: #ff4d6d;
+  --grab-orange: #ff7a45;
+  --grab-deep: #e63946;
+  /* 用户端主题渐变 */
+  --gradient-brand: linear-gradient(135deg, #3b6ef5 0%, #409eff 45%, #35c1f0 100%);
+  --gradient-hot: linear-gradient(135deg, #ff4d6d, #ff7849);
+  --gradient-warm: linear-gradient(135deg, #ff9f43, #f7c948);
+  --gradient-grab: linear-gradient(135deg, #ff4d6d 0%, #ff7a45 100%);
+  --gradient-grab-deep: linear-gradient(135deg, #e63946 0%, #ff6b3d 100%);
+  --gradient-vip: linear-gradient(135deg, #ffd700, #ff9f43);
+  --gradient-notify: linear-gradient(135deg, #667eea, #764ba2);
+  /* 中性色 */
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #c0c4cc;
+  --border-light: #ebeef5;
+  --border-base: #dcdfe6;
+  --bg-page: #f5f7fa;
+  --bg-card: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
+  /* 圆角与阴影 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --shadow-card: 0 4px 18px rgba(31, 92, 170, 0.08);
+  --shadow-card-hover: 0 12px 28px rgba(31, 92, 170, 0.16);
+  --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.1);
+  --shadow-grab: 0 8px 24px rgba(255, 77, 109, 0.35);
+  --shadow-grab-hover: 0 12px 32px rgba(255, 77, 109, 0.45);
+  /* 过渡曲线 */
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-page);
+  color: var(--text-primary);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+::selection {
+  background: rgba(64, 158, 255, 0.22);
+}
+
+/* 统一细滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(144, 147, 153, 0.35);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(144, 147, 153, 0.55);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 卡片通用悬浮效果 */
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* 链接 hover 统一动效 */
+.link-primary {
+  color: var(--brand-primary);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.link-primary:hover {
+  opacity: 0.75;
+}
+
+/* 文本省略 */
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ellipsis-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* 渐变文字 */
+.text-gradient {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ===== 图片兜底 ===== */
+/* el-image 加载失败时的占位图（配合 @/utils/placeholder 的内联 SVG 使用） */
+.img-fallback {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #f0f2f5;
+  color: #c0c4cc;
+}
+
+/* ===== 动画关键帧 ===== */
+@keyframes pulse-grab {
+  0%, 100% { transform: scale(1); box-shadow: var(--shadow-grab); }
+  50% { transform: scale(1.04); box-shadow: var(--shadow-grab-hover); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes countdown-tick {
+  0% { transform: scale(1.15); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes hot-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* ===== 通用动画类 ===== */
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s var(--ease-out) both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.35s var(--ease-out) both;
+}
+
+.animate-pulse-grab {
+  animation: pulse-grab 1.5s ease-in-out infinite;
+}
+
+.animate-hot-bounce {
+  animation: hot-bounce 2s ease-in-out infinite;
+}
+
+/* ===== 抢票按钮通用样式 ===== */
+.btn-grab {
+  background: var(--gradient-grab);
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-grab);
+  transition: all 0.3s var(--ease-out);
+}
+
+.btn-grab:hover {
+  background: var(--gradient-grab-deep);
+  box-shadow: var(--shadow-grab-hover);
+  transform: translateY(-2px);
+}
+
+.btn-grab:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ===== 价格徽标 ===== */
+.price-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.price-badge .currency {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.price-badge .amount {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.price-badge .suffix {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ===== 状态标签通用 ===== */
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.status-tag::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-tag.status-selling { background: rgba(255, 77, 109, 0.1); color: #ff4d6d; }
+.status-tag.status-selling::before { background: #ff4d6d; animation: pulse-grab 1.5s ease-in-out infinite; }
+
+.status-tag.status-upcoming { background: rgba(64, 158, 255, 0.1); color: #409eff; }
+.status-tag.status-upcoming::before { background: #409eff; }
+
+.status-tag.status-ended { background: rgba(144, 147, 153, 0.12); color: #909399; }
+.status-tag.status-ended::before { background: #909399; }
+
+/* ===== 通用骨架屏 ===== */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 50%, #f0f2f5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ===== Element Plus 覆盖增强 ===== */
+.el-button--primary {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.el-button--primary:hover {
+  background: #66b1ff;
+  border-color: #66b1ff;
+}
+
+.el-card {
+  border-radius: var(--radius-lg);
+  border: none;
+  box-shadow: var(--shadow-card);
+}
+
+.el-tag {
+  border-radius: 16px;
+}
+
+/* ===== 响应式工具类 ===== */
+.container-wide {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.text-ellipsis-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* ===== 移动端响应式基座（<=768px） ===== */
+/* 说明：具体页面另有更细粒度的 @media 规则，这里只放全站通用的兜底规则 */
+@media (max-width: 768px) {
+  /* 页面级禁止横向溢出，表格等宽内容由各自的 .table-scroll 容器内部滚动 */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* 固定宽度弹窗在窄屏自适应 */
+  .el-dialog {
+    width: 92% !important;
+    margin-top: 8vh !important;
+  }
+
+  .el-message-box {
+    width: 90% !important;
+  }
+
+  /* 表格外层滚动容器：窄屏下表格内部横向滚动，避免撑破页面 */
+  .table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 分页在窄屏换行居中 */
+  .el-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+
+  .el-pagination__jump {
+    margin-left: 0;
+  }
+}

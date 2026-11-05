@@ -1,0 +1,556 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智娱票务 - 发现精彩活动</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f7fa; }
+        #app { min-height: 100vh; }
+
+        /* 顶部导航栏 */
+        .header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(255,255,255,0.98); backdrop-filter: blur(10px);
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+        }
+        .header-inner {
+            max-width: 1200px; margin: 0 auto; padding: 0 24px;
+            display: flex; align-items: center; height: 60px;
+        }
+        .logo { font-size: 24px; font-weight: bold; color: #409eff; flex-shrink: 0; }
+        .nav-links { display: flex; gap: 32px; margin-left: 48px; flex: 1; }
+        .nav-links a { font-size: 15px; color: #333; text-decoration: none; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: #409eff; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-right a { font-size: 14px; color: #666; text-decoration: none; }
+        .header-right a:hover { color: #409eff; }
+
+        /* 搜索框 */
+        .search-box {
+            max-width: 1200px; margin: 0 auto; padding: 16px 24px;
+            background: #fff;
+        }
+        .search-inner {
+            display: flex; align-items: center; gap: 12px;
+            background: #f5f5f5; border-radius: 24px; padding: 6px 16px;
+            max-width: 600px; margin: 0 auto;
+        }
+        .search-inner .el-input { flex: 1; }
+        .search-inner .el-input__wrapper { background: transparent; box-shadow: none; }
+        .search-inner .el-button { border-radius: 18px; padding: 0 24px; }
+
+        /* 轮播图 */
+        .banner-section {
+            max-width: 1200px; margin: 0 auto; padding: 0 24px;
+        }
+        .banner-wrapper {
+            position: relative; height: 420px; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        }
+        .banner-slider {
+            display: flex; height: 100%; transition: transform 0.5s ease;
+        }
+        .banner-item {
+            flex-shrink: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            position: relative;
+        }
+        .banner-item::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 100%);
+        }
+        .banner-content {
+            position: absolute; left: 60px; top: 50%; transform: translateY(-50%);
+            color: #fff; z-index: 10;
+        }
+        .banner-title { font-size: 36px; font-weight: bold; margin-bottom: 12px; }
+        .banner-desc { font-size: 16px; opacity: 0.9; margin-bottom: 24px; }
+        .banner-btn {
+            background: #f56c6c; border-color: #f56c6c;
+            height: 44px; font-size: 16px; padding: 0 32px;
+            border-radius: 22px; font-weight: 600;
+        }
+        .banner-indicators {
+            position: absolute; bottom: 20px; right: 20px;
+            display: flex; gap: 8px; z-index: 10;
+        }
+        .banner-indicator {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.4); cursor: pointer;
+            transition: all .3s;
+        }
+        .banner-indicator.active { width: 24px; border-radius: 4px; background: #fff; }
+        .banner-prev, .banner-next {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 20px; z-index: 10;
+            transition: all .3s;
+        }
+        .banner-prev:hover, .banner-next:hover { background: rgba(255,255,255,0.4); }
+        .banner-prev { left: 20px; }
+        .banner-next { right: 20px; }
+
+        /* 分类导航 */
+        .category-section {
+            max-width: 1200px; margin: 32px auto; padding: 0 24px;
+        }
+        .category-list {
+            display: flex; justify-content: space-between; gap: 16px;
+            background: #fff; padding: 24px 32px;
+            border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+        .category-item {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer; padding: 12px 20px; border-radius: 8px;
+            transition: all .3s;
+        }
+        .category-item:hover { background: #f0f5ff; transform: translateY(-2px); }
+        .category-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+        .category-name { font-size: 13px; color: #666; font-weight: 500; }
+
+        /* 活动列表区域 */
+        .section {
+            max-width: 1200px; margin: 0 auto 40px; padding: 0 24px;
+        }
+        .section-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 22px; font-weight: bold; color: #333;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-title .title-badge {
+            font-size: 12px; font-weight: normal; color: #fff;
+            padding: 2px 8px; border-radius: 4px;
+        }
+        .section-more { font-size: 14px; color: #999; cursor: pointer; }
+        .section-more:hover { color: #409eff; }
+
+        /* 活动卡片网格 */
+        .activity-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+        }
+        .activity-card {
+            background: #fff; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            cursor: pointer; transition: all .3s;
+        }
+        .activity-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        .card-img {
+            width: 100%; height: 180px; background: #f5f5f5;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .card-img .tag {
+            position: absolute; top: 8px; left: 8px;
+            padding: 4px 10px; border-radius: 4px; font-size: 12px;
+            font-weight: 600;
+        }
+        .card-body { padding: 16px; }
+        .card-title {
+            font-size: 15px; font-weight: 600; color: #333;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            margin-bottom: 8px;
+        }
+        .card-info {
+            font-size: 12px; color: #999; margin-bottom: 4px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .card-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 12px;
+        }
+        .card-price { font-size: 20px; font-weight: bold; color: #f56c6c; }
+        .card-price small { font-size: 12px; font-weight: normal; }
+        .card-status {
+            font-size: 12px; padding: 4px 10px; border-radius: 12px;
+        }
+
+        /* 公告栏 */
+        .notice-bar {
+            background: #fff; border-bottom: 1px solid #eee;
+        }
+        .notice-inner {
+            max-width: 1200px; margin: 0 auto; padding: 10px 24px;
+            display: flex; align-items: center; gap: 12px;
+            overflow: hidden;
+        }
+        .notice-icon { color: #f56c6c; flex-shrink: 0; }
+        .notice-container {
+            flex: 1; display: flex; gap: 24px; overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .notice-container::-webkit-scrollbar { display: none; }
+        .notice-item {
+            font-size: 14px; color: #666; white-space: nowrap;
+            cursor: pointer; padding: 4px 0;
+        }
+        .notice-item:hover { color: #f56c6c; }
+        .notice-item.top { color: #f56c6c; font-weight: 600; }
+        .notice-dot { color: #f56c6c; margin-right: 4px; }
+
+        /* 底部 */
+        .footer {
+            background: #2c3e50; color: rgba(255,255,255,0.6);
+            padding: 40px 0 20px;
+        }
+        .footer-inner {
+            max-width: 1200px; margin: 0 auto; padding: 0 24px;
+        }
+        .footer-links { display: flex; justify-content: center; gap: 32px; margin-bottom: 16px; }
+        .footer-links a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; }
+        .footer-links a:hover { color: #fff; }
+        .footer-copyright { text-align: center; font-size: 12px; }
+
+        /* 响应式 */
+        @media (max-width: 992px) {
+            .activity-grid { grid-template-columns: repeat(3, 1fr); }
+            .banner-title { font-size: 28px; }
+            .banner-desc { font-size: 14px; }
+        }
+        @media (max-width: 768px) {
+            .activity-grid { grid-template-columns: repeat(2, 1fr); }
+            .category-list { flex-wrap: wrap; justify-content: flex-start; }
+            .nav-links { display: none; }
+            .banner-title { font-size: 22px; }
+            .banner-content { left: 24px; }
+        }
+        @media (max-width: 576px) {
+            .activity-grid { grid-template-columns: 1fr; }
+            .banner-wrapper { height: 280px; }
+        }
+    </style>
+</head>
+<body>
+<div id="app" th:inline="none">
+    <!-- 顶部导航栏 -->
+    <div class="header">
+        <div class="header-inner">
+            <div class="logo">🎫 智娱票务</div>
+            <div class="nav-links">
+                <a href="/page/" class="active">首页</a>
+                <a href="/page/activity/list">活动浏览</a>
+            </div>
+            <div class="header-right">
+                <template v-if="loggedIn">
+                    <a href="/page/order/list">我的订单</a>
+                    <a href="/page/user/center">个人中心</a>
+                    <a v-if="user.role === 2" href="/page/admin/dashboard" style="color:#e6a23c;">管理后台</a>
+                    <el-button type="danger" text size="small" @click="handleLogout">退出</el-button>
+                </template>
+                <template v-else>
+                    <a href="/page/login">登录</a>
+                    <a href="/page/register">注册</a>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="search-box">
+        <div class="search-inner">
+            <el-icon><Search /></el-icon>
+            <el-input v-model="searchKeyword" placeholder="搜索演出、赛事、展览..." clearable @keyup.enter="goSearch" />
+            <el-button type="primary" @click="goSearch">搜索</el-button>
+        </div>
+    </div>
+
+    <!-- 公告栏 -->
+    <div class="notice-bar" v-if="noticeList.length">
+        <div class="notice-inner">
+            <el-icon class="notice-icon"><Bell /></el-icon>
+            <div class="notice-container">
+                <div v-for="(notice, index) in noticeList" :key="notice.id"
+                     class="notice-item" :class="{ top: notice.isTop === 1 }"
+                     @click="goNoticeDetail(notice.id)">
+                    <span v-if="index !== 0" class="notice-dot">·</span>
+                    <span v-if="notice.isTop === 1">[置顶]</span>
+                    {{ notice.title }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 轮播图 -->
+    <div class="banner-section">
+        <div class="banner-wrapper">
+            <div class="banner-slider" :style="{ transform: 'translateX(-' + currentBanner * 100 + '%)' }">
+                <div class="banner-item" v-for="(item, index) in bannerList" :key="index"
+                     :style="{ backgroundImage: 'url(' + normalizeImageUrl(item.imageUrl) + ')' }"
+                     @click="goActivity(item.activityId)">
+                    <div class="banner-content">
+                        <div class="banner-title">{{ item.title || '精彩活动' }}</div>
+                        <div class="banner-desc">{{ item.description || '探索更多精彩' }}</div>
+                        <el-button v-if="item.activityId" type="primary" class="banner-btn" @click.stop="goActivity(item.activityId)">立即购票</el-button>
+                    </div>
+                </div>
+            </div>
+            <div class="banner-prev" @click="prevBanner"><el-icon><ArrowLeft /></el-icon></div>
+            <div class="banner-next" @click="nextBanner"><el-icon><ArrowRight /></el-icon></div>
+            <div class="banner-indicators">
+                <div v-for="(_, index) in bannerList" :key="index"
+                     class="banner-indicator" :class="{ active: currentBanner === index }"
+                     @click="currentBanner = index"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分类导航 -->
+    <div class="category-section">
+        <div class="category-list">
+            <div class="category-item" @click="goCategory(0)">
+                <div class="category-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">🎪</div>
+                <span class="category-name">全部</span>
+            </div>
+            <div class="category-item" v-for="cat in categories" :key="cat.id" @click="goCategory(cat.id)">
+                <div class="category-icon" :style="{ background: cat.color || '#409eff' }">
+                    {{ cat.icon || '🎫' }}
+                </div>
+                <span class="category-name">{{ cat.name }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 热门活动 / 全部活动 -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-title">
+                <el-icon><Flame /></el-icon>
+                {{ showAllActivities ? '全部活动' : '热门活动' }}
+                <span class="title-badge" v-if="!showAllActivities" style="background:#f56c6c;">HOT</span>
+            </div>
+            <div class="section-more" @click="goActivityList">查看更多 →</div>
+        </div>
+        <div class="activity-grid">
+            <div class="activity-card" v-for="item in displayActivities" :key="item.id" @click="goDetail(item.id)">
+                <div class="card-img">
+                    <img v-if="item.coverImage" :src="normalizeImageUrl(item.coverImage)" :alt="item.title" />
+                    <el-icon v-else><Picture /></el-icon>
+                    <el-tag v-if="item.grabStatus === 'GRABBING'" class="tag" type="danger">🔥 抢票中</el-tag>
+                    <el-tag v-else-if="item.grabStatus === 'NOT_STARTED'" class="tag" type="warning">即将开抢</el-tag>
+                </div>
+                <div class="card-body">
+                    <div class="card-title">{{ item.title }}</div>
+                    <div class="card-info">{{ item.venue }}</div>
+                    <div class="card-info">{{ formatTime(item.startTime) }}</div>
+                    <div class="card-footer">
+                        <span class="card-price"><small>¥</small>{{ item.price }}</span>
+                        <el-tag size="small" class="card-status" :type="getStatusType(item.status)">
+                            {{ getStatusText(item.status) }}
+                        </el-tag>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <el-empty v-if="!displayActivities.length" description="暂无活动" style="padding:60px 0;" />
+    </div>
+
+    <!-- 即将开始 -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-title">
+                <el-icon><Timer /></el-icon>
+                即将开抢
+                <span class="title-badge" style="background:#409eff;">NEW</span>
+            </div>
+            <div class="section-more" @click="goActivityList">查看更多 →</div>
+        </div>
+        <div class="activity-grid">
+            <div class="activity-card" v-for="item in upcomingList" :key="item.id" @click="goDetail(item.id)">
+                <div class="card-img">
+                    <img v-if="item.coverImage" :src="normalizeImageUrl(item.coverImage)" :alt="item.title" />
+                    <el-icon v-else><Picture /></el-icon>
+                </div>
+                <div class="card-body">
+                    <div class="card-title">{{ item.title }}</div>
+                    <div class="card-info">{{ item.venue }}</div>
+                    <div class="card-info">开抢时间：{{ formatTime(item.grabStartTime) }}</div>
+                    <div class="card-footer">
+                        <span class="card-price"><small>¥</small>{{ item.price }}</span>
+                        <el-button type="warning" text size="small" @click.stop="handleReservation(item.id)">预约</el-button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <el-empty v-if="!upcomingList.length" description="暂无即将开始的活动" style="padding:60px 0;" />
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+        <div class="footer-inner">
+            <div class="footer-links">
+                <a href="/page/">首页</a>
+                <a href="/page/activity/list">活动浏览</a>
+                <a href="/page/user/center">个人中心</a>
+            </div>
+            <div class="footer-copyright">© 2024 智娱票务系统 — 毕业设计项目</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.2.36/dist/index.full.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+const app = createApp({
+    setup() {
+        const searchKeyword = ref('');
+        const hotList = ref([]);
+        const allList = ref([]);
+        const upcomingList = ref([]);
+        const bannerList = ref([]);
+        const noticeList = ref([]);
+        const categories = ref([]);
+        const loggedIn = computed(() => isLoggedIn());
+        const user = computed(() => getCurrentUser());
+        const currentBanner = ref(0);
+        let bannerTimer = null;
+
+        const showAllActivities = computed(() => hotList.value.length === 0 && allList.value.length > 0);
+        const displayActivities = computed(() => showAllActivities.value ? allList.value : hotList.value);
+
+        const loadHot = async () => {
+            try {
+                const data = await get('/activity/hot');
+                hotList.value = Array.isArray(data) ? data : (data.records || []);
+            } catch (e) { console.error(e); }
+        };
+
+        const loadAll = async () => {
+            try {
+                const data = await get('/activity/list?page=1&size=8');
+                allList.value = data.records || [];
+            } catch (e) { console.error(e); }
+        };
+
+        const loadUpcoming = async () => {
+            try {
+                const data = await get('/activity/list?page=1&size=8');
+                const list = data.records || [];
+                upcomingList.value = list.filter(item => item.grabStatus === 'NOT_STARTED');
+            } catch (e) { console.error(e); }
+        };
+
+        const loadBanners = async () => {
+            try {
+                const data = await get('/banner/list');
+                bannerList.value = data || [];
+                if (!bannerList.value.length) {
+                    bannerList.value = [
+                        { id: 1, imageUrl: '', title: '精彩演出 火热抢票', description: '演唱会、话剧、展览、体育赛事', activityId: null },
+                        { id: 2, imageUrl: '', title: '限时特惠', description: '新用户专享优惠，购票立减', activityId: null },
+                        { id: 3, imageUrl: '', title: '热门推荐', description: '周杰伦、莫奈大展等热门活动', activityId: null }
+                    ];
+                }
+            } catch (e) { console.error(e); }
+        };
+
+        const loadNotices = async () => {
+            try {
+                const data = await get('/announcement/list?page=1&size=3');
+                noticeList.value = data.records || [];
+            } catch (e) { console.error(e); }
+        };
+
+        const loadCategories = async () => {
+            try {
+                const data = await get('/category/list');
+                categories.value = Array.isArray(data) ? data : [];
+            } catch (e) { console.error(e); }
+        };
+
+        const goDetail = (id) => { window.location.href = '/page/activity/detail?id=' + id; };
+        const goActivity = (activityId) => {
+            if (activityId) window.location.href = '/page/activity/detail?id=' + activityId;
+        };
+        const goSearch = () => {
+            const url = '/page/activity/list' + (searchKeyword.value ? '?keyword=' + encodeURIComponent(searchKeyword.value) : '');
+            window.location.href = url;
+        };
+        const goActivityList = () => { window.location.href = '/page/activity/list'; };
+        const goCategory = (id) => {
+            const url = id ? '/page/activity/list?categoryId=' + id : '/page/activity/list';
+            setTimeout(() => { window.location.href = url; }, 0);
+        };
+        const goNoticeDetail = (id) => { window.location.href = '/page/announcement/detail?id=' + id; };
+
+        const handleReservation = async (activityId) => {
+            if (!loggedIn.value) {
+                ElementPlus.ElMessage.warning('请先登录');
+                window.location.href = '/page/login';
+                return;
+            }
+            try {
+                await post('/reservation/apply?activityId=' + activityId, {});
+                ElementPlus.ElMessage.success('预约成功！');
+            } catch (e) { ElementPlus.ElMessage.error(e.message || '预约失败'); }
+        };
+
+        const handleLogout = () => { logout(); };
+
+        const normalizeImageUrl = (url) => {
+            if (!url) return '';
+            const cleaned = url.trim().split(/\s+/)[0];
+            if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+                return cleaned;
+            }
+            return cleaned.startsWith('/') ? cleaned : '/' + cleaned;
+        };
+
+        const getStatusText = (status) => {
+            const map = { 0: '待审核', 1: '审核通过', 2: '已驳回', 3: '已上架', 4: '已下架' };
+            return map[status] || '未知';
+        };
+        const getStatusType = (status) => {
+            const map = { 0: 'info', 1: '', 2: 'danger', 3: 'success', 4: 'warning' };
+            return map[status] || 'info';
+        };
+
+        const prevBanner = () => {
+            currentBanner.value = currentBanner.value === 0 ? bannerList.value.length - 1 : currentBanner.value - 1;
+        };
+        const nextBanner = () => {
+            currentBanner.value = currentBanner.value === bannerList.value.length - 1 ? 0 : currentBanner.value + 1;
+        };
+
+        onMounted(() => {
+            loadHot();
+            loadAll();
+            loadUpcoming();
+            loadBanners();
+            loadNotices();
+            loadCategories();
+            bannerTimer = setInterval(nextBanner, 4000);
+        });
+
+        onUnmounted(() => {
+            if (bannerTimer) { clearInterval(bannerTimer); bannerTimer = null; }
+        });
+
+        return {
+            searchKeyword, hotList, allList, upcomingList, bannerList, noticeList, categories,
+            loggedIn, user, currentBanner, showAllActivities, displayActivities,
+            goDetail, goActivity, goSearch, goActivityList, goCategory, goNoticeDetail,
+            handleReservation, handleLogout,
+            formatTime, getStatusText, getStatusType,
+            prevBanner, nextBanner, normalizeImageUrl
+        };
+    }
+});
+app.use(ElementPlus);
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>

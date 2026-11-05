@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运营管理中心 - 活动管理</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: 'Microsoft YaHei', sans-serif; }
+        .layout { display: flex; height: 100vh; }
+        .sidebar {
+            width: 220px; background: #304156; color: #fff; display: flex;
+            flex-direction: column; flex-shrink: 0;
+        }
+        .sidebar-logo {
+            height: 60px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-menu { flex: 1; padding-top: 10px; }
+        .sidebar-menu .menu-item {
+            display: flex; align-items: center; padding: 14px 24px; color: #bfcbd9;
+            text-decoration: none; font-size: 14px; cursor: pointer; transition: all .3s;
+        }
+        .sidebar-menu .menu-item:hover,
+        .sidebar-menu .menu-item.active { background: #263445; color: #409eff; }
+        .sidebar-menu .menu-item .el-icon { margin-right: 10px; }
+        .sidebar-footer {
+            padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-footer .logout-btn {
+            width: 100%; color: #bfcbd9; cursor: pointer; font-size: 14px;
+            display: flex; align-items: center;
+        }
+        .sidebar-footer .logout-btn:hover { color: #f56c6c; }
+        .main-content { flex: 1; background: #f0f2f5; padding: 24px; overflow-y: auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .page-header h2 { font-size: 20px; color: #303133; }
+        .table-card {
+            background: #fff; border-radius: 8px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .pagination-wrap { margin-top: 20px; display: flex; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="layout">
+        <!-- 左侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">运营管理中心</div>
+            <div class="sidebar-menu">
+                <a class="menu-item" href="/page/operator/dashboard">
+                    <el-icon><DataBoard /></el-icon>仪表盘
+                </a>
+                <a class="menu-item active" href="/page/operator/activity">
+                    <el-icon><Ticket /></el-icon>活动管理
+                </a>
+                <a class="menu-item" href="/page/operator/stats">
+                    <el-icon><TrendCharts /></el-icon>数据统计
+                </a>
+            </div>
+            <div class="sidebar-footer">
+                <div class="logout-btn" style="margin-bottom: 12px;" v-if="userRole === 2" @click="switchToAdmin">
+                    <el-icon><Setting /></el-icon> 管理员界面
+                </div>
+                <div class="logout-btn" style="margin-bottom: 12px;" @click="switchToUser">
+                    <el-icon><User /></el-icon> 用户界面
+                </div>
+                <div class="logout-btn" @click="logout">
+                    <el-icon><SwitchButton /></el-icon> 退出登录
+                </div>
+            </div>
+        </div>
+        <!-- 右侧内容 -->
+        <div class="main-content">
+            <div class="page-header">
+                <h2>活动管理</h2>
+                <el-button type="primary" @click="goAdd">
+                    <el-icon><Plus /></el-icon> 新增活动
+                </el-button>
+            </div>
+            <div class="table-card">
+                <el-table :data="activities" stripe style="width: 100%">
+                    <el-table-column prop="name" label="活动名称" min-width="160" />
+                    <el-table-column prop="categoryName" label="分类" width="100" />
+                    <el-table-column prop="location" label="地点" width="120" />
+                    <el-table-column prop="price" label="票价" width="80">
+                        <template #default="{ row }">¥{{ row.price }}</template>
+                    </el-table-column>
+                    <el-table-column label="票数/已售" width="110">
+                        <template #default="{ row }">{{ row.soldCount || 0 }}/{{ row.totalTickets || 0 }}</template>
+                    </el-table-column>
+                    <el-table-column label="抢票时间" width="180">
+                        <template #default="{ row }">{{ row.rushStartTime }} ~ {{ row.rushEndTime }}</template>
+                    </el-table-column>
+                    <el-table-column prop="status" label="状态" width="100">
+                        <template #default="{ row }">
+                            <el-tag :type="statusType(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="220" fixed="right">
+                        <template #default="{ row }">
+                            <el-button size="small" @click="goEdit(row.id)">编辑</el-button>
+                            <el-button size="small" type="warning" v-if="row.status === 'DRAFT' || row.status === 'REJECTED'" @click="applyAudit(row.id)">提交审核</el-button>
+                            <el-button size="small" type="danger" v-if="row.status === 'ONLINE'" @click="offline(row.id)">下架</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <div class="pagination-wrap">
+                    <el-pagination
+                        background
+                        layout="total, prev, pager, next"
+                        :total="total"
+                        :page-size="pageSize"
+                        :current-page="currentPage"
+                        @current-change="handlePageChange"
+                    />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.2.36"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1"></script>
+<script src="/js/common.js"></script>
+<script>
+const { createApp, ref, onMounted } = Vue;
+const app = createApp({
+    setup() {
+        const activities = ref([]);
+        const currentPage = ref(1);
+        const pageSize = ref(10);
+        const total = ref(0);
+
+        const statusText = (status) => {
+            const map = { DRAFT: '草稿', PENDING: '待审核', APPROVED: '已审核', ONLINE: '已上架', OFFLINE: '已下架', REJECTED: '已驳回' };
+            return map[status] || status;
+        };
+        const statusType = (status) => {
+            const map = { DRAFT: 'info', PENDING: 'warning', APPROVED: 'success', ONLINE: 'success', OFFLINE: 'danger', REJECTED: 'danger' };
+            return map[status] || 'info';
+        };
+
+        const loadData = async () => {
+            try {
+                const url = '/operator/activity/list?page=' + currentPage.value + '&size=' + pageSize.value;
+                const res = await get(url);
+                activities.value = res?.records || res || [];
+                total.value = res?.total || 0;
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        const handlePageChange = (page) => {
+            currentPage.value = page;
+            loadData();
+        };
+
+        const goAdd = () => { window.location.href = '/page/operator/activity-form'; };
+        const goEdit = (id) => { window.location.href = '/page/operator/activity-form?id=' + id; };
+
+        const applyAudit = async (id) => {
+            try {
+                await post('/operator/activity/' + id + '/apply');
+                ElementPlus.ElMessage.success('已提交审核');
+                loadData();
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        const offline = async (id) => {
+            try {
+                await ElementPlus.ElMessageBox.confirm('确定要下架该活动吗？', '提示', { type: 'warning' });
+                await post('/operator/activity/' + id + '/offline');
+                ElementPlus.ElMessage.success('已下架');
+                loadData();
+            } catch (e) {
+                if (e !== 'cancel') console.error(e);
+            }
+        };
+
+        const logout = () => {
+            localStorage.removeItem('token');
+            window.location.href = '/page/login';
+        };
+
+        const userRole = ref(() => {
+            const user = getCurrentUser();
+            return user?.role ?? 0;
+        });
+        const switchToAdmin = () => { window.location.href = '/page/admin/dashboard'; };
+        const switchToUser = () => { window.location.href = '/page/user/center'; };
+
+        onMounted(() => { loadData(); });
+
+        return { activities, currentPage, pageSize, total, statusText, statusType, handlePageChange, goAdd, goEdit, applyAudit, offline, logout, userRole, switchToAdmin, switchToUser };
+    }
+});
+app.use(ElementPlus);
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>

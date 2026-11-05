@@ -1,0 +1,175 @@
+﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 智能文娱票务系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: 'Microsoft YaHei', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; overflow: hidden;
+        }
+        /* 背景装饰圆 */
+        body::before, body::after {
+            content: ''; position: fixed; border-radius: 50%; opacity: 0.12; pointer-events: none;
+        }
+        body::before {
+            width: 500px; height: 500px; background: #fff;
+            top: -150px; right: -100px;
+        }
+        body::after {
+            width: 400px; height: 400px; background: #fff;
+            bottom: -120px; left: -80px;
+        }
+        .login-card {
+            width: 440px; background: #fff; border-radius: 16px;
+            padding: 48px 44px 40px; box-shadow: 0 24px 80px rgba(0,0,0,0.18);
+            position: relative; z-index: 1;
+        }
+        .login-logo {
+            text-align: center; margin-bottom: 6px;
+        }
+        .login-logo .logo-icon {
+            font-size: 48px; display: inline-block;
+            animation: bounce 2s ease infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .login-title {
+            text-align: center; font-size: 24px; font-weight: bold;
+            color: #303133; margin-bottom: 6px;
+        }
+        .login-subtitle {
+            text-align: center; font-size: 14px; color: #909399; margin-bottom: 36px;
+        }
+        .login-form .el-form-item { margin-bottom: 22px; }
+        .login-form .el-input :deep(.el-input__wrapper) {
+            border-radius: 8px;
+        }
+        .form-extra {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .form-extra .el-checkbox { color: #606266; }
+        .form-extra a { font-size: 13px; color: #409eff; text-decoration: none; }
+        .form-extra a:hover { text-decoration: underline; }
+        .login-btn {
+            width: 100%; height: 46px; font-size: 16px; letter-spacing: 4px;
+            border-radius: 8px;
+        }
+        .login-footer {
+            text-align: center; margin-top: 24px; font-size: 14px; color: #909399;
+        }
+        .login-footer a { color: #409eff; text-decoration: none; font-weight: 500; }
+        .login-footer a:hover { text-decoration: underline; }
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .login-card { width: 92vw; padding: 36px 24px 32px; }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="login-card">
+        <div class="login-logo">
+            <span class="logo-icon">🎫</span>
+        </div>
+        <div class="login-title">智能文娱票务系统</div>
+        <div class="login-subtitle">欢迎回来，请登录您的账号</div>
+        <el-form class="login-form" :model="form" :rules="rules" ref="formRef" @submit.prevent="handleLogin">
+            <el-form-item prop="username">
+                <el-input v-model="form.username" placeholder="请输入用户名" :prefix-icon="User" size="large" clearable />
+            </el-form-item>
+            <el-form-item prop="password">
+                <el-input v-model="form.password" type="password" placeholder="请输入密码"
+                          :prefix-icon="Lock" show-password size="large" @keyup.enter="handleLogin" />
+            </el-form-item>
+            <div class="form-extra">
+                <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+                <a href="javascript:void(0)" @click="forgotPassword">忘记密码？</a>
+            </div>
+            <el-form-item>
+                <el-button class="login-btn" type="primary" :loading="loading" @click="handleLogin">登 录</el-button>
+            </el-form-item>
+        </el-form>
+        <div class="login-footer">
+            还没有账号？<a href="/page/register">立即注册</a>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.2.36"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1"></script>
+<script src="/js/common.js"></script>
+<script>
+const { createApp, ref, reactive, shallowRef, onMounted } = Vue;
+const app = createApp({
+    setup() {
+        const User = shallowRef(ElementPlusIconsVue.User);
+        const Lock = shallowRef(ElementPlusIconsVue.Lock);
+        const formRef = ref(null);
+        const loading = ref(false);
+        const rememberMe = ref(false);
+        const form = reactive({ username: '', password: '' });
+        const rules = {
+            username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+            password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+        };
+
+        // 记住我 - 从 localStorage 恢复
+        onMounted(() => {
+            const saved = localStorage.getItem('remembered_user');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    form.username = parsed.username || '';
+                    rememberMe.value = true;
+                } catch (e) {}
+            }
+        });
+
+        const handleLogin = async () => {
+            const valid = await formRef.value.validate().catch(() => false);
+            if (!valid) return;
+            loading.value = true;
+            try {
+                const data = await post('/user/login', { username: form.username, password: form.password });
+                // 记住我
+                if (rememberMe.value) {
+                    localStorage.setItem('remembered_user', JSON.stringify({ username: form.username }));
+                } else {
+                    localStorage.removeItem('remembered_user');
+                }
+                saveLoginInfo(data);
+                ElementPlus.ElMessage.success('登录成功');
+                setTimeout(() => {
+                    window.location.href = data.redirectPath || '/';
+                }, 500);
+            } catch (e) {
+                ElementPlus.ElMessage.error(e.message || '登录失败');
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        const forgotPassword = () => {
+            ElementPlus.ElMessage.info('请联系管理员重置密码');
+        };
+
+        return { User, Lock, formRef, form, rules, loading, rememberMe, handleLogin, forgotPassword };
+    }
+});
+app.use(ElementPlus);
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运营管理中心 - 公告管理</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: 'Microsoft YaHei', sans-serif; }
+        .layout { display: flex; height: 100vh; }
+        .sidebar {
+            width: 220px; background: #304156; color: #fff; display: flex;
+            flex-direction: column; flex-shrink: 0;
+        }
+        .sidebar-logo {
+            height: 60px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-menu { flex: 1; padding-top: 10px; overflow-y: auto; }
+        .sidebar-menu .menu-item {
+            display: flex; align-items: center; padding: 12px 24px; color: #bfcbd9;
+            text-decoration: none; font-size: 14px; cursor: pointer; transition: all .3s;
+        }
+        .sidebar-menu .menu-item:hover,
+        .sidebar-menu .menu-item.active { background: #263445; color: #409eff; }
+        .sidebar-menu .menu-item .el-icon { margin-right: 10px; }
+        .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-footer .logout-btn {
+            width: 100%; color: #bfcbd9; cursor: pointer; font-size: 14px;
+            display: flex; align-items: center;
+        }
+        .sidebar-footer .logout-btn:hover { color: #f56c6c; }
+        .main-content { flex: 1; background: #f0f2f5; padding: 24px; overflow-y: auto; }
+
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .page-header h2 { font-size: 20px; color: #303133; }
+
+        .table-card {
+            background: #fff; border-radius: 8px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .pagination-wrap { margin-top: 20px; display: flex; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+<div id="app" th:inline="none">
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-logo">🎫 运营中心</div>
+            <div class="sidebar-menu">
+                <a class="menu-item" href="/page/operator/dashboard">
+                    <el-icon><DataBoard /></el-icon>数据概览
+                </a>
+                <a class="menu-item" href="/page/operator/activities">
+                    <el-icon><Ticket /></el-icon>活动管理
+                </a>
+                <a class="menu-item" href="/page/operator/orders">
+                    <el-icon><List /></el-icon>订单管理
+                </a>
+                <a class="menu-item active" href="/page/operator/announcements">
+                    <el-icon><Bell /></el-icon>公告管理
+                </a>
+            </div>
+            <div class="sidebar-footer">
+                <div class="logout-btn" style="margin-bottom: 12px;" v-if="userRole === 2" @click="switchToAdmin">
+                    <el-icon><Setting /></el-icon> 管理员界面
+                </div>
+                <div class="logout-btn" style="margin-bottom: 12px;" @click="switchToUser">
+                    <el-icon><User /></el-icon> 用户界面
+                </div>
+                <div class="logout-btn" @click="handleLogout">
+                    <el-icon><SwitchButton /></el-icon> 退出登录
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="page-header">
+                <h2>公告管理</h2>
+                <el-button type="primary" @click="showAdd">
+                    <el-icon><Plus /></el-icon> 发布公告
+                </el-button>
+            </div>
+
+            <div class="table-card">
+                <el-table :data="announcements" stripe style="width: 100%">
+                    <el-table-column prop="title" label="标题" min-width="180" />
+                    <el-table-column prop="content" label="内容" min-width="200">
+                        <template #default="{ row }">
+                            {{ row.content && row.content.length > 40 ? row.content.substring(0, 40) + '...' : (row.content || '') }}
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="isTop" label="置顶" width="80">
+                        <template #default="{ row }">
+                            <el-tag :type="row.isTop === 1 ? 'danger' : 'info'" size="small">
+                                {{ row.isTop === 1 ? '置顶' : '普通' }}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="status" label="状态" width="80">
+                        <template #default="{ row }">
+                            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                                {{ row.status === 1 ? '已发布' : '已下架' }}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="createTime" label="创建时间" width="170">
+                        <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="280" fixed="right">
+                        <template #default="{ row }">
+                            <el-button size="small" @click="showEdit(row)">编辑</el-button>
+                            <el-button size="small" :type="row.isTop === 1 ? 'info' : 'warning'" @click="handleTop(row)">
+                                {{ row.isTop === 1 ? '取消置顶' : '置顶' }}
+                            </el-button>
+                            <el-button size="small" type="info" v-if="row.status === 1" @click="handleOffline(row.id)">下架</el-button>
+                            <el-button size="small" type="success" v-if="row.status === 0" @click="handleOnline(row.id)">上架</el-button>
+                            <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <div class="pagination-wrap">
+                    <el-pagination
+                        background
+                        layout="total, prev, pager, next"
+                        :total="total"
+                        :page-size="pageSize"
+                        :current-page="currentPage"
+                        @current-change="handlePageChange"
+                    />
+                </div>
+            </div>
+
+            <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑公告' : '发布公告'" width="600px">
+                <el-form :model="form" label-width="80px">
+                    <el-form-item label="标题">
+                        <el-input v-model="form.title" placeholder="请输入公告标题" />
+                    </el-form-item>
+                    <el-form-item label="内容">
+                        <el-input v-model="form.content" type="textarea" :rows="6" placeholder="请输入公告内容" />
+                    </el-form-item>
+                    <el-form-item label="置顶">
+                        <el-switch v-model="form.isTopVal" active-text="是" inactive-text="否" />
+                    </el-form-item>
+                </el-form>
+                <template #footer>
+                    <el-button @click="dialogVisible = false">取消</el-button>
+                    <el-button type="primary" @click="submitForm">确定</el-button>
+                </template>
+            </el-dialog>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus@2.2.36/dist/index.full.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const { createApp, ref, onMounted } = Vue;
+const app = createApp({
+    setup() {
+        const announcements = ref([]);
+        const currentPage = ref(1);
+        const pageSize = ref(10);
+        const total = ref(0);
+        const dialogVisible = ref(false);
+        const isEdit = ref(false);
+        const form = ref({ id: null, title: '', content: '', isTopVal: false });
+
+        const formatTime = (val) => {
+            if (!val) return '-';
+            const str = String(val);
+            return str.replace('T', ' ').substring(0, 19);
+        };
+
+        const loadData = async () => {
+            try {
+                const url = '/announcement/list?page=' + currentPage.value + '&size=' + pageSize.value;
+                const res = await get(url);
+                announcements.value = res?.records || res || [];
+                total.value = res?.total || 0;
+            } catch (e) { console.error(e); }
+        };
+
+        const handlePageChange = (page) => { currentPage.value = page; loadData(); };
+
+        const showAdd = () => {
+            isEdit.value = false;
+            form.value = { id: null, title: '', content: '', isTopVal: false };
+            dialogVisible.value = true;
+        };
+
+        const showEdit = (row) => {
+            isEdit.value = true;
+            form.value = { id: row.id, title: row.title, content: row.content || '', isTopVal: row.isTop === 1 };
+            dialogVisible.value = true;
+        };
+
+        const submitForm = async () => {
+            try {
+                const data = { title: form.value.title, content: form.value.content, isTop: form.value.isTopVal ? 1 : 0 };
+                if (isEdit.value) {
+                    await put('/admin/announcement/' + form.value.id, data);
+                    ElementPlus.ElMessage.success('修改成功');
+                } else {
+                    await post('/admin/announcement', data);
+                    ElementPlus.ElMessage.success('发布成功');
+                }
+                dialogVisible.value = false;
+                loadData();
+            } catch (e) { console.error(e); }
+        };
+
+        const handleTop = async (row) => {
+            try {
+                await put('/admin/announcement/' + row.id + '/top');
+                ElementPlus.ElMessage.success(row.isTop === 1 ? '已取消置顶' : '已置顶');
+                loadData();
+            } catch (e) { console.error(e); }
+        };
+
+        const handleOffline = async (id) => {
+            try {
+                await ElementPlus.ElMessageBox.confirm('确定要下架该公告吗？', '提示', { type: 'warning' });
+                await put('/admin/announcement/' + id + '/offline');
+                ElementPlus.ElMessage.success('已下架');
+                loadData();
+            } catch (e) { if (e !== 'cancel') console.error(e); }
+        };
+
+        const handleOnline = async (id) => {
+            try {
+                await put('/admin/announcement/' + id + '/online');
+                ElementPlus.ElMessage.success('已上架');
+                loadData();
+            } catch (e) { console.error(e); ElementPlus.ElMessage.error('上架失败'); }
+        };
+
+        const handleDelete = async (id) => {
+            try {
+                await ElementPlus.ElMessageBox.confirm('确定要删除该公告吗？此操作不可恢复', '警告', { type: 'warning' });
+                await del('/admin/announcement/' + id);
+                ElementPlus.ElMessage.success('已删除');
+                loadData();
+            } catch (e) { if (e !== 'cancel') console.error(e); }
+        };
+
+        const handleLogout = () => { logout(); };
+        const switchToUser = () => { window.location.href = '/page/user/center'; };
+        
+        const userRole = ref(() => {
+            const user = getCurrentUser();
+            return user?.role ?? 0;
+        });
+        const switchToAdmin = () => { window.location.href = '/page/admin/dashboard'; };
+
+        onMounted(() => { loadData(); });
+
+        return {
+            announcements, currentPage, pageSize, total,
+            dialogVisible, isEdit, form,
+            loadData, handlePageChange, showAdd, showEdit, submitForm,
+            handleTop, handleOffline, handleOnline, handleDelete,
+            handleLogout, switchToUser,
+            userRole, switchToAdmin,
+            formatTime
+        };
+    }
+});
+app.use(ElementPlus);
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>

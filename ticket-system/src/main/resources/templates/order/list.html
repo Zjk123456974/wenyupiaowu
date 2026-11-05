@@ -1,0 +1,321 @@
+﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的订单 - 智能文娱票务系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.2.36/dist/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: 'Microsoft YaHei', sans-serif; background: #f5f7fa; }
+        #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+        .top-nav {
+            background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky; top: 0; z-index: 100; height: 64px;
+            display: flex; align-items: center; padding: 0 32px;
+        }
+        .nav-logo { font-size: 20px; font-weight: bold; color: #409eff; margin-right: 48px; }
+        .nav-menu { display: flex; gap: 32px; flex: 1; }
+        .nav-menu a {
+            font-size: 15px; color: #606266; text-decoration: none; padding: 4px 0;
+            border-bottom: 2px solid transparent; transition: all .3s;
+        }
+        .nav-menu a:hover, .nav-menu a.active { color: #409eff; border-bottom-color: #409eff; }
+        .nav-right { display: flex; align-items: center; gap: 16px; }
+        .nav-right a { font-size: 14px; color: #606266; text-decoration: none; }
+
+        .main-wrap { flex: 1; padding: 24px 32px; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .content-title { font-size: 20px; font-weight: bold; color: #303133; margin-bottom: 20px; }
+
+        .order-tabs { display: flex; gap: 0; margin-bottom: 20px; }
+        .order-tab {
+            padding: 10px 24px; font-size: 14px; cursor: pointer;
+            background: #fff; border: 1px solid #e4e7ed; border-right: none;
+            transition: all .3s; position: relative;
+        }
+        .order-tab:first-child { border-radius: 6px 0 0 6px; }
+        .order-tab:last-child { border-radius: 0 6px 6px 0; border-right: 1px solid #e4e7ed; }
+        .order-tab:hover { color: #409eff; }
+        .order-tab.active { background: #ecf5ff; color: #409eff; border-color: #b3d8ff; }
+        .order-tab.active::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+            height: 2px; background: #409eff;
+        }
+        .order-tab .badge {
+            background: #f56c6c; color: #fff; font-size: 11px; padding: 1px 5px;
+            border-radius: 10px; margin-left: 4px;
+        }
+
+        .order-card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px dashed #ebeef5; }
+        .order-no { font-size: 14px; color: #606266; }
+        .order-status { font-size: 14px; font-weight: 600; }
+        
+        .order-items { display: flex; gap: 16px; }
+        .item-cover { width: 120px; height: 80px; border-radius: 6px; overflow: hidden; background: #f5f7fa; flex-shrink: 0; }
+        .item-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .item-info { flex: 1; }
+        .item-title { font-size: 16px; font-weight: 600; color: #303133; margin-bottom: 8px; }
+        .item-meta { font-size: 13px; color: #909399; margin-bottom: 4px; }
+        .item-price { font-size: 14px; color: #606266; }
+        .item-price strong { color: #f56c6c; font-size: 16px; }
+
+        .order-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #ebeef5; }
+        .order-total { font-size: 14px; }
+        .order-total strong { color: #f56c6c; font-size: 18px; }
+        .order-actions { display: flex; gap: 8px; }
+        .order-actions .el-button { font-size: 12px; padding: 4px 16px; }
+
+        .ticket-dialog { text-align: center; }
+        .ticket-card {
+            background: linear-gradient(135deg, #fff5f5 0%, #fff 50%, #fff5f5 100%);
+            border: 2px dashed #f56c6c; border-radius: 12px; padding: 32px;
+            position: relative; margin: 16px 0;
+        }
+        .ticket-card::before, .ticket-card::after {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            background: #fff; border-radius: 50%;
+        }
+        .ticket-card::before { top: -12px; left: -12px; }
+        .ticket-card::after { bottom: -12px; right: -12px; }
+        .verify-code { font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #303133; margin: 16px 0; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="top-nav">
+            <div class="nav-logo">智娱票务</div>
+            <div class="nav-menu">
+                <a href="/page/">首页</a>
+                <a href="/page/activity/list">活动列表</a>
+                <a href="/page/user/center">个人中心</a>
+            </div>
+            <div class="nav-right" v-if="loggedIn">
+                <span>{{ user.nickname || user.username }}</span>
+                <a href="javascript:void(0)" @click="logout">退出</a>
+            </div>
+            <div class="nav-right" v-else>
+                <a href="/page/login">登录</a>
+                <a href="/page/register">注册</a>
+            </div>
+        </div>
+
+        <div class="main-wrap">
+            <div class="content-title">我的订单</div>
+            
+            <div class="order-tabs">
+                <div class="order-tab" :class="{ active: orderStatus === null }" @click="switchStatus(null)">全部</div>
+                <div class="order-tab" :class="{ active: orderStatus === 0 }" @click="switchStatus(0)">待支付</div>
+                <div class="order-tab" :class="{ active: orderStatus === 1 }" @click="switchStatus(1)">已完成</div>
+                <div class="order-tab" :class="{ active: orderStatus === 2 }" @click="switchStatus(2)">已取消</div>
+                <div class="order-tab" :class="{ active: orderStatus === 3 }" @click="switchStatus(3)">已过期</div>
+            </div>
+
+            <div v-loading="loading" style="min-height: 300px;">
+                <div v-for="order in orderList" :key="order.id" class="order-card">
+                    <div class="order-header">
+                        <div class="order-no">订单号：{{ order.orderNo }}</div>
+                        <div class="order-status" :style="{ color: statusColor(order.status) }">{{ statusText(order.status) }}</div>
+                    </div>
+                    <div class="order-items" @click="goActivityDetail(order.activityId)">
+                        <div class="item-cover">
+                            <img v-if="order.coverImage" :src="normalizeImageUrl(order.coverImage)" alt="封面">
+                            <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#c0c4cc;">暂无图片</div>
+                        </div>
+                        <div class="item-info">
+                            <div class="item-title">{{ order.activityTitle || '未知活动' }}</div>
+                            <div class="item-meta">{{ formatTime(order.activityStartTime) }} | {{ order.venue }}</div>
+                            <div class="item-meta" v-if="order.seatType" style="color:#409eff;">票档：{{ order.seatType }}</div>
+                            <div class="item-price">¥{{ formatMoney(order.totalAmount) }} x {{ order.quantity }}张</div>
+                        </div>
+                    </div>
+                    <div class="order-footer">
+                        <div class="order-total">合计：<strong>¥{{ formatMoney(order.totalAmount) }}</strong></div>
+                        <div class="order-actions">
+                            <el-button v-if="order.status === 0" type="primary" @click="goPay(order)">去支付</el-button>
+                            <el-button v-if="order.status === 0" type="warning" @click="cancelOrder(order)">取消订单</el-button>
+                            <el-button v-if="order.status === 1" type="success" @click="viewTicket(order)">查看电子票</el-button>
+                            <el-button v-if="order.status === 1" type="warning" @click="refundOrder(order)">申请退款</el-button>
+                            <el-button v-if="order.status === 2 || order.status === 3 || order.status === 0 || order.status === 5" type="danger" text @click="deleteOrder(order)">删除订单</el-button>
+                        </div>
+                    </div>
+                </div>
+
+                <el-empty v-if="!orderList.length && !loading" description="暂无订单" />
+
+                <div style="text-align:center;margin-top:20px;">
+                    <el-pagination
+                        background
+                        layout="total, prev, pager, next"
+                        :total="total"
+                        :page-size="pageSize"
+                        :current-page="currentPage"
+                        @current-change="handlePageChange"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <el-dialog v-model="ticketDialogVisible" title="电子票" width="500px">
+            <div v-if="ticketInfo" class="ticket-dialog">
+                <div class="ticket-card">
+                    <div style="font-size:20px;font-weight:bold;color:#f56c6c;margin-bottom:8px;">🎫 电子票</div>
+                    <div style="font-size:16px;font-weight:600;color:#303133;margin-bottom:4px;">{{ ticketInfo.activityTitle }}</div>
+                    <div style="font-size:13px;color:#909399;">{{ ticketInfo.venue }} | {{ formatTime(ticketInfo.startTime) }}</div>
+                    <div class="verify-code">{{ ticketInfo.verifyCode }}</div>
+                    <div style="font-size:12px;color:#909399;">订单号：{{ ticketInfo.orderNo }}</div>
+                    <div style="font-size:12px;color:#909399;">数量：{{ ticketInfo.quantity }}张 | 金额：¥{{ formatMoney(ticketInfo.totalAmount) }}</div>
+                    <div style="font-size:12px;color:#f56c6c;margin-top:12px;">请凭此电子票入场</div>
+                </div>
+            </div>
+        </el-dialog>
+    </div>
+
+    <script src="https://unpkg.com/vue@3.3.13/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/element-plus@2.2.36"></script>
+    <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1"></script>
+    <script src="/js/common.js"></script>
+    <script>
+        const { createApp, ref, onMounted, computed } = Vue;
+        const { ElMessage, ElMessageBox } = ElementPlus;
+
+        createApp({
+            setup() {
+                const loggedIn = ref(false);
+                const user = ref({});
+                const orderList = ref([]);
+                const loading = ref(false);
+                const currentPage = ref(1);
+                const pageSize = ref(10);
+                const total = ref(0);
+                const orderStatus = ref(null);
+
+                const ticketDialogVisible = ref(false);
+                const ticketInfo = ref(null);
+
+                const statusText = (status) => {
+                    const map = { 0: '待支付', 1: '已完成', 2: '已取消', 3: '已过期', 5: '已退款' };
+                    return map[status] || '未知';
+                };
+
+                const normalizeImageUrl = (url) => {
+                    if (!url) return '';
+                    const cleaned = url.trim().split(/\s+/)[0];
+                    if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+                        return cleaned;
+                    }
+                    return cleaned.startsWith('/') ? cleaned : '/' + cleaned;
+                };
+
+                const statusColor = (status) => {
+                    const map = { 0: '#e6a23c', 1: '#67c23a', 2: '#909399', 3: '#f56c6c', 5: '#409eff' };
+                    return map[status] || '#606266';
+                };
+
+                const loadOrders = async () => {
+                    loading.value = true;
+                    try {
+                        let url = '/order/list?page=' + currentPage.value + '&size=' + pageSize.value;
+                        if (orderStatus.value !== null) url += '&status=' + orderStatus.value;
+                        const res = await get(url);
+                        orderList.value = res?.records || res || [];
+                        total.value = res?.total || 0;
+                    } catch (e) {
+                        console.error('加载订单失败:', e);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const switchStatus = (status) => {
+                    orderStatus.value = status;
+                    currentPage.value = 1;
+                    loadOrders();
+                };
+
+                const handlePageChange = (page) => {
+                    currentPage.value = page;
+                    loadOrders();
+                };
+
+                const goPay = (order) => {
+                    window.location.href = '/page/order/pay?id=' + order.id;
+                };
+
+                const cancelOrder = async (order) => {
+                    try {
+                        await ElMessageBox.confirm('确认取消订单 ' + order.orderNo + '？', '取消订单', { type: 'warning' });
+                        await post('/order/cancel/' + order.id);
+                        ElMessage.success('订单已取消');
+                        loadOrders();
+                    } catch (e) {
+                        if (e !== 'cancel') ElMessage.error(e.message || '取消失败');
+                    }
+                };
+
+                const viewTicket = async (order) => {
+                    try {
+                        const data = await get('/order/ticket/' + order.id);
+                        ticketInfo.value = { ...data, orderNo: order.orderNo };
+                        ticketDialogVisible.value = true;
+                    } catch (e) {
+                        ElMessage.error(e.message || '获取电子票失败');
+                    }
+                };
+
+                const goActivityDetail = (activityId) => {
+                    if (activityId) {
+                        window.open('/page/activity/detail?id=' + activityId, '_blank');
+                    }
+                };
+
+                const refundOrder = async (order) => {
+                    try {
+                        await ElMessageBox.confirm('确认申请退款？退款金额为 ¥' + formatMoney(order.totalAmount), '申请退款', { type: 'warning' });
+                        await post('/order/refund/' + order.id);
+                        ElMessage.success('退款申请已提交');
+                        loadOrders();
+                    } catch (e) {
+                        if (e !== 'cancel') ElMessage.error(e.message || '退款失败');
+                    }
+                };
+
+                const deleteOrder = async (order) => {
+                    try {
+                        await ElMessageBox.confirm('确认删除订单 ' + order.orderNo + '？', '删除订单', { type: 'warning' });
+                        await del('/order/' + order.id);
+                        ElMessage.success('订单已删除');
+                        loadOrders();
+                    } catch (e) {
+                        if (e !== 'cancel') ElMessage.error(e.message || '删除失败');
+                    }
+                };
+
+                const logout = () => {
+                    localStorage.removeItem('token');
+                    window.location.href = '/page/login';
+                };
+
+                onMounted(() => {
+                    loggedIn.value = isLoggedIn();
+                    if (loggedIn.value) {
+                        user.value = getCurrentUser();
+                        loadOrders();
+                    } else {
+                        window.location.href = '/page/login';
+                    }
+                });
+
+                return {
+                    loggedIn, user, orderList, loading, currentPage, pageSize, total, orderStatus,
+                    statusText, statusColor, loadOrders, switchStatus, handlePageChange,
+                    goPay, cancelOrder, viewTicket, logout,
+                    refundOrder, deleteOrder, goActivityDetail,
+                    ticketDialogVisible, ticketInfo, formatTime, formatMoney, normalizeImageUrl
+                };
+            }
+        }).use(ElementPlus).mount('#app');
+    </script>
+</body>
+</html>

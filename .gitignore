@@ -1,0 +1,57 @@
+# ===================== IDE / 编辑器 =====================
+.idea/
+.vscode/
+*.iml
+
+# ===================== 操作系统 =====================
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# ===================== 日志 =====================
+*.log
+
+# ===================== 依赖 / 构建产物 =====================
+node_modules/
+target/
+dist/
+dist_verify/
+
+# ===================== 工具缓存 =====================
+.playwright-cli/
+.trae-html-share-packages/
+.uploads/
+
+# ===================== 运行时上传目录 =====================
+uploads/
+ticket-system/uploads/
+
+# ===================== 密钥 / 敏感配置 =====================
+# 真实配置文件含数据库密码与 JWT 密钥，绝不入库；
+# 仅提交 application.example.yml 模板。
+ticket-system/src/main/resources/application.yml
+
+# ===================== 非源码杂物（大文件/资料） =====================
+软件工程毕设教程/
+*.docx
+~$*
+ppt_build/
+ppttpl/
+图片/
+2026-09-18-80808ccf/
+concurrency-test-report/
+
+# ===================== 根目录测试脚本与截图（非项目本体） =====================
+*.yaml
+*.yml
+!ticket-system/src/main/resources/application.example.yml
+_find_act*.py
+concurrency_test.py
+query
+$null
+mytickets.png
+orders-final.png
+
+# ===================== 前端临时缓存 =====================
+vite.config.js.timestamp-*.mjs
+*.timestamp-*.mjs

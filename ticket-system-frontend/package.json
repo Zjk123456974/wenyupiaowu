@@ -1,0 +1,30 @@
+{
+  "name": "ticket-system-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "axios": "^1.6.0",
+    "echarts": "^5.6.0",
+    "element-plus": "^2.2.36",
+    "html5-qrcode": "^2.3.8",
+    "pinia": "^2.1.0",
+    "qrcode": "^1.5.4",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "vite": "^5.4.21"
+  },
+  "allowScripts": {},
+  "optionalDependencies": {
+    "@esbuild/win32-x64": "^0.21.5"
+  }
+}
